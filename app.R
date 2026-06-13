@@ -25,20 +25,20 @@ host_cities <- host_cities %>% left_join(coords, by = "id")
 
 english_to_spanish <- c(
   "Mexico" = "México", "South Africa" = "Sudáfrica", "South Korea" = "Corea del Sur",
-  "Winner UEFA Playoff D" = "República Checa", "Canada" = "Canadá", 
-  "Winner UEFA Playoff A" = "Bosnia y Herzegovina", "Qatar" = "Catar", 
+  "Czech Republic" = "República Checa", "Canada" = "Canadá", 
+  "Bosnia and Herzegovina" = "Bosnia y Herzegovina", "Qatar" = "Catar", 
   "Switzerland" = "Suiza", "Brazil" = "Brasil", "Morocco" = "Marruecos",
   "Haiti" = "Haití", "Scotland" = "Escocia", "USA" = "Estados Unidos",
-  "Paraguay" = "Paraguay", "Australia" = "Australia", "Winner UEFA Playoff C" = "Turquía", 
+  "Paraguay" = "Paraguay", "Australia" = "Australia", "Turkey" = "Turquía", 
   "Germany" = "Alemania", "Curaçao" = "Curazao", "Côte d'Ivoire" = "Costa de Marfil", 
   "Ecuador" = "Ecuador", "Netherlands" = "Países Bajos", "Japan" = "Japón", 
-  "Winner UEFA Playoff B" = "Suecia", "Tunisia" = "Túnez", "Belgium" = "Bélgica", 
+  "Sweden" = "Suecia", "Tunisia" = "Túnez", "Belgium" = "Bélgica", 
   "Egypt" = "Egipto", "IR Iran" = "Irán", "New Zealand" = "Nueva Zelanda", 
   "Spain" = "España", "Cabo Verde" = "Cabo Verde", "Saudi Arabia" = "Arabia Saudita", 
   "Uruguay" = "Uruguay", "France" = "Francia", "Senegal" = "Senegal", 
-  "Winner FIFA Playoff 2" = "Irak", "Norway" = "Noruega", "Argentina" = "Argentina", 
+  "Iraq" = "Irak", "Norway" = "Noruega", "Argentina" = "Argentina", 
   "Algeria" = "Argelia", "Austria" = "Austria", "Jordan" = "Jordania", 
-  "Portugal" = "Portugal", "Winner FIFA Playoff 1" = "República Democrática del Congo", 
+  "Portugal" = "Portugal", "DR Congo" = "República Democrática del Congo", 
   "Uzbekistan" = "Uzbekistán", "Colombia" = "Colombia", "England" = "Inglaterra", 
   "Croatia" = "Croacia", "Ghana" = "Ghana", "Panama" = "Panamá"
 )
@@ -74,11 +74,23 @@ parse_predictions <- function(filepath) {
     )
   
   # Join with matches to get correct stage_id, match_label and city_id
-  stage_names <- c("Group Stage", "Round of 32", "Round of 16", "Quarter-Finals", "Semi-Finals", "Third Place Playoff", "Final")
+  stage_names <- c("Group Stage", "Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Third Place Playoff", "Final")
   data <- data %>%
     left_join(matches, by = c("MatchID" = "id")) %>%
     mutate(
-      Group = if_else(stage_id == 1, match_label, stage_names[stage_id])
+      Group = if_else(stage_id == 1, match_label, stage_names[stage_id]),
+      MatchDay_Label = factor(case_when(
+        stage_id == 1 & match_number <= 24 ~ "Groups first match",
+        stage_id == 1 & match_number <= 48 ~ "Groups second match",
+        stage_id == 1 & match_number <= 72 ~ "Groups third match",
+        stage_id == 2 ~ "Round of 32",
+        stage_id == 3 ~ "Round of 16",
+        stage_id == 4 ~ "Quarter-final",
+        stage_id == 5 ~ "Semi-final",
+        stage_id == 6 ~ "Third Place Playoff",
+        stage_id == 7 ~ "Final",
+        TRUE ~ "Unknown"
+      ), levels = c("Groups first match", "Groups second match", "Groups third match", "Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Third Place Playoff", "Final"))
     )
   
   data$Team1_Abrev <- sapply(data$Team1, spanish_to_fifa)
@@ -440,7 +452,7 @@ ui <- page_sidebar(
               )
           ),
           div(class = "widget-matches", 
-              h5("Group Matches", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
+              h5("Matches by Stage", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               uiOutput("matches_ui")
           ),
           div(class = "widget-table",
@@ -573,8 +585,8 @@ server <- function(input, output, session) {
     joined <- real_data %>% 
       left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     
-    match_divs <- lapply(unique(joined$Group_real), function(g) {
-      g_matches <- joined %>% filter(Group_real == g)
+    match_divs <- lapply(unique(joined$MatchDay_Label_real), function(g) {
+      g_matches <- joined %>% filter(MatchDay_Label_real == g)
       
       rows <- lapply(1:nrow(g_matches), function(i) {
         row <- g_matches[i, ]
