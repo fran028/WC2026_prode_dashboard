@@ -102,13 +102,14 @@ parse_predictions <- function(filepath) {
 real_data <- parse_predictions("predictions/resultados_reales.csv")
 
 calculate_standings <- function(d) {
-  # Base table with all group stage teams
-  base <- d %>% 
-    filter(stage_id == 1) %>% 
-    select(Group, Team1, Team2) %>% 
-    pivot_longer(cols = c(Team1, Team2), values_to = "Team") %>%
-    distinct(Group, Team) %>%
-    mutate(P = 0, W = 0, D = 0, L = 0, GF = 0, GA = 0, GD = 0, Pts = 0)
+  # Base table with all group stage teams directly from teams.csv
+  base <- teams %>%
+    mutate(
+      Group = paste("Group", group_letter),
+      Team = unname(english_to_spanish[team_name]),
+      P = 0, W = 0, D = 0, L = 0, GF = 0, GA = 0, GD = 0, Pts = 0
+    ) %>%
+    select(Group, Team, P, W, D, L, GF, GA, GD, Pts)
     
   d1 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team1, GF = Goals1, GA = Goals2, Group)
   d2 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team2, GF = Goals2, GA = Goals1, Group)
