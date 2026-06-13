@@ -1,0 +1,97 @@
+﻿;;;
+;Gemini AI;;
+Equipo;Resultado;;Equipo
+México;2;0;Sudáfrica
+Corea del Sur;1;1;República Checa
+República Checa;2;1;Sudáfrica
+México;1;1;Corea del Sur
+República Checa;0;1;México
+Sudáfrica;0;2;Corea del Sur
+;;;
+Equipo;Resultado;;Equipo
+Canadá;1;1;Bosnia y Herzegovina
+Catar;0;3;Suiza
+Suiza;2;0;Bosnia y Herzegovina
+Canadá;2;0;Catar
+Suiza;2;1;Canadá
+Bosnia y Herzegovina;1;0;Catar
+;;;
+Equipo;Resultado;;Equipo
+Brasil;2;1;Marruecos
+Haití;0;2;Escocia
+Escocia;1;1;Marruecos
+Brasil;3;0;Haití
+Escocia;0;2;Brasil
+Marruecos;2;0;Haití
+;;;
+Equipo;Resultado;;Equipo
+Estados Unidos;1;1;Paraguay
+Australia;1;2;Turquía
+Estados Unidos;2;1;Australia
+Turquía;1;1;Paraguay
+Turquía;1;2;Estados Unidos
+Paraguay;2;0;Australia
+;;;
+Equipo;Resultado;;Equipo
+Alemania;4;0;Curazao
+Costa de Marfil;1;2;Ecuador
+Alemania;2;0;Costa de Marfil
+Ecuador;3;0;Curazao
+Curazao;0;2;Costa de Marfil
+Ecuador;1;1;Alemania
+;;;
+Equipo;Resultado;;Equipo
+Países Bajos;1;1;Japón
+Suecia;2;0;Túnez
+Países Bajos;2;1;Suecia
+Túnez;0;1;Japón
+Japón;1;1;Suecia
+Túnez;0;3;Países Bajos
+;;;
+Equipo;Resultado;;Equipo
+Bélgica;2;1;Egipto
+Irán;2;0;Nueva Zelanda
+Bélgica;2;0;Irán
+Nueva Zelanda;0;2;Egipto
+Egipto;1;1;Irán
+Nueva Zelanda;0;3;Bélgica
+;;;
+Equipo;Resultado;;Equipo
+España;3;0;Cabo Verde
+Arabia Saudita;0;2;Uruguay
+España;3;0;Arabia Saudita
+Uruguay;2;0;Cabo Verde
+Cabo Verde;1;1;Arabia Saudita
+Uruguay;1;1;España
+;;;
+Equipo;Resultado;;Equipo
+Francia;2;1;Noruega
+Senegal;2;0;Irak
+Francia;2;0;Senegal
+Irak;0;2;Noruega
+Noruega;1;1;Senegal
+Irak;0;4;Francia
+;;;
+Equipo;Resultado;;Equipo
+Argentina;2;0;Austria
+Argelia;2;0;Jordania
+Argentina;2;1;Argelia
+Jordania;0;3;Austria
+Austria;1;1;Argelia
+Jordania;0;4;Argentina
+;;;
+Equipo;Resultado;;Equipo
+Colombia;1;2;Portugal
+Uzbekistán;1;1;República Democrática del Congo
+Colombia;2;0;Uzbekistán
+República Democrática del Congo;0;2;Portugal
+Portugal;3;0;Uzbekistán
+República Democrática del Congo;0;2;Colombia
+;;;
+Equipo;Resultado;;Equipo
+Croacia;1;1;Inglaterra
+Ghana;2;0;Panamá
+Croacia;1;0;Ghana
+Panamá;0;3;Inglaterra
+Inglaterra;2;1;Ghana
+Panamá;0;2;Croacia

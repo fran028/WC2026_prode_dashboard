@@ -1,0 +1,141 @@
+﻿;;;
+;Resultados Reales;;
+Equipo;Resultado;;Equipo
+México;2;0;Sudáfrica
+Corea del Sur;2;1;República Checa
+República Checa;NA;NA;Sudáfrica
+México;NA;NA;Corea del Sur
+República Checa;NA;NA;México
+Sudáfrica;NA;NA;Corea del Sur
+;;;
+Equipo;Resultado;;Equipo
+Canadá;1;1;Bosnia y Herzegovina
+Catar;NA;NA;Suiza
+Suiza;NA;NA;Bosnia y Herzegovina
+Canadá;NA;NA;Catar
+Suiza;NA;NA;Canadá
+Bosnia y Herzegovina;NA;NA;Catar
+;;;
+Equipo;Resultado;;Equipo
+Brasil;NA;NA;Marruecos
+Haití;NA;NA;Escocia
+Escocia;NA;NA;Marruecos
+Brasil;NA;NA;Haití
+Escocia;NA;NA;Brasil
+Marruecos;NA;NA;Haití
+;;;
+Equipo;Resultado;;Equipo
+Estados Unidos;4;1;Paraguay
+Australia;NA;NA;Turquía
+Estados Unidos;NA;NA;Australia
+Turquía;NA;NA;Paraguay
+Turquía;NA;NA;Estados Unidos
+Paraguay;NA;NA;Australia
+;;;
+Equipo;Resultado;;Equipo
+Alemania;NA;NA;Curazao
+Costa de Marfil;NA;NA;Ecuador
+Alemania;NA;NA;Costa de Marfil
+Ecuador;NA;NA;Curazao
+Curazao;NA;NA;Costa de Marfil
+Ecuador;NA;NA;Alemania
+;;;
+Equipo;Resultado;;Equipo
+Países Bajos;NA;NA;Japón
+Suecia;NA;NA;Túnez
+Países Bajos;NA;NA;Suecia
+Túnez;NA;NA;Japón
+Japón;NA;NA;Suecia
+Túnez;NA;NA;Países Bajos
+;;;
+Equipo;Resultado;;Equipo
+Bélgica;NA;NA;Egipto
+Irán;NA;NA;Nueva Zelanda
+Bélgica;NA;NA;Irán
+Nueva Zelanda;NA;NA;Egipto
+Egipto;NA;NA;Irán
+Nueva Zelanda;NA;NA;Bélgica
+;;;
+Equipo;Resultado;;Equipo
+España;NA;NA;Cabo Verde
+Arabia Saudita;NA;NA;Uruguay
+España;NA;NA;Arabia Saudita
+Uruguay;NA;NA;Cabo Verde
+Cabo Verde;NA;NA;Arabia Saudita
+Uruguay;NA;NA;España
+;;;
+Equipo;Resultado;;Equipo
+Francia;NA;NA;Senegal
+Irak;NA;NA;Noruega
+Francia;NA;NA;Irak
+Noruega;NA;NA;Senegal
+Noruega;NA;NA;Francia
+Senegal;NA;NA;Irak
+;;;
+Equipo;Resultado;;Equipo
+Argentina;NA;NA;Argelia
+Austria;NA;NA;Jordania
+Argentina;NA;NA;Austria
+Jordania;NA;NA;Argelia
+Argelia;NA;NA;Austria
+Jordania;NA;NA;Argentina
+;;;
+Equipo;Resultado;;Equipo
+Portugal;NA;NA;República Democrática del Congo
+Uzbekistán;NA;NA;Colombia
+Portugal;NA;NA;Uzbekistán
+Colombia;NA;NA;República Democrática del Congo
+Colombia;NA;NA;Portugal
+República Democrática del Congo;NA;NA;Uzbekistán
+;;;
+Equipo;Resultado;;Equipo
+Inglaterra;NA;NA;Croacia
+Ghana;NA;NA;Panamá
+Inglaterra;NA;NA;Ghana
+Panamá;NA;NA;Croacia
+Panamá;NA;NA;Inglaterra
+Croacia;NA;NA;Ghana
+;;;
+Equipo;Resultado;;Equipo
+2A;NA;NA;2B
+1C;NA;NA;2F
+1E;NA;NA;3ABCDF
+1F;NA;NA;2C
+2E;NA;NA;2I
+1I;NA;NA;3CDFGH
+1A;NA;NA;3CEFHI
+1L;NA;NA;3EHIJK
+1G;NA;NA;3AEHIJ
+1D;NA;NA;3BEFIJ
+1H;NA;NA;2J
+2K;NA;NA;2L
+1B;NA;NA;3EFGIJ
+2D;NA;NA;2G
+1J;NA;NA;2H
+1K;NA;NA;3DEIJL
+;;;
+Equipo;Resultado;;Equipo
+W73;NA;NA;W75
+W74;NA;NA;W77
+W76;NA;NA;W78
+W79;NA;NA;W80
+W83;NA;NA;W84
+W81;NA;NA;W82
+W86;NA;NA;W88
+W85;NA;NA;W87
+;;;
+Equipo;Resultado;;Equipo
+W89;NA;NA;W90
+W93;NA;NA;W94
+W91;NA;NA;W92
+W95;NA;NA;W100
+;;;
+Equipo;Resultado;;Equipo
+W97;NA;NA;W98
+W99;NA;NA;W100
+;;;
+Equipo;Resultado;;Equipo
+RU101;NA;NA;RU102
+;;;
+Equipo;Resultado;;Equipo
+W101;NA;NA;W102

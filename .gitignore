@@ -1,0 +1,20 @@
+# Ignore everything
+*
+
+# But not these directories
+!extra_data/
+!predictions/
+
+# Ignore everything inside these directories
+extra_data/*
+predictions/*
+
+# But allow CSV files inside them
+!extra_data/*.csv
+!predictions/*.csv
+
+# Allow app.R
+!app.R
+
+# Allow .gitignore
+!.gitignore
