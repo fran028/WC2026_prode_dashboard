@@ -237,9 +237,10 @@ generate_bracket_ui <- function(matches_df) {
       div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 12px;", "Finals"),
       div(class="bracket-matchup",
           div(class="bracket-match final-match", matches_df$match_label[matches_df$id == 104]),
-          div(style="height: 40px;"),
-          div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;", "Third Place"),
-          div(class="bracket-match third-place-match", style="border-color: #555; color: #888;", matches_df$match_label[matches_df$id == 103])
+          div(class="third-place-wrapper", style="width: 100%; display: flex; flex-direction: column; align-items: center;",
+              div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;", "Third Place"),
+              div(class="bracket-match third-place-match", style="border-color: #555; color: #888; width: 100%;", matches_df$match_label[matches_df$id == 103])
+          )
       )
   )
   
