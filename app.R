@@ -722,7 +722,13 @@ server <- function(input, output, session) {
     preds <- current_preds()
     
     if(is.null(preds)) {
-      joined <- real_data
+      joined <- real_data %>% 
+        rename(
+          Team1_Abrev_real = Team1_Abrev,
+          Team2_Abrev_real = Team2_Abrev,
+          city_id_real = city_id,
+          MatchDay_Label_real = MatchDay_Label
+        )
     } else {
       joined <- real_data %>% 
         left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
@@ -735,10 +741,10 @@ server <- function(input, output, session) {
         popup_text = {
           city_matches <- joined %>% filter(city_id_real == id)
           if(nrow(city_matches) > 0) {
-            match_list <- paste0(city_matches$Team1_Abrev_real, " vs ", city_matches$Team2_Abrev_real, collapse = "<br>")
+            match_list <- paste0(as.character(city_matches$MatchDay_Label_real), ": ", city_matches$Team1_Abrev_real, " vs ", city_matches$Team2_Abrev_real, collapse = "<br>")
             paste0("<b>", city_name, "</b><br>", match_list)
           } else {
-            paste0("<b>", city_name, "</b><br>No group matches")
+            paste0("<b>", city_name, "</b><br>No matches")
           }
         }
       )
