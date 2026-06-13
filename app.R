@@ -102,10 +102,18 @@ parse_predictions <- function(filepath) {
 real_data <- parse_predictions("predictions/resultados_reales.csv")
 
 calculate_standings <- function(d) {
-  # Standings are calculated only for played Group Stage matches
+  # Base table with all group stage teams
+  base <- d %>% 
+    filter(stage_id == 1) %>% 
+    select(Group, Team1, Team2) %>% 
+    pivot_longer(cols = c(Team1, Team2), values_to = "Team") %>%
+    distinct(Group, Team) %>%
+    mutate(P = 0, W = 0, D = 0, L = 0, GF = 0, GA = 0, GD = 0, Pts = 0)
+    
   d1 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team1, GF = Goals1, GA = Goals2, Group)
   d2 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team2, GF = Goals2, GA = Goals1, Group)
-  bind_rows(d1, d2) %>%
+  
+  played <- bind_rows(d1, d2) %>%
     group_by(Group, Team) %>%
     summarise(
       P = n(),
@@ -117,7 +125,21 @@ calculate_standings <- function(d) {
       GD = GF - GA,
       Pts = W * 3 + D,
       .groups = "drop"
+    )
+    
+  base %>%
+    left_join(played, by = c("Group", "Team"), suffix = c("_base", "")) %>%
+    mutate(
+      P = coalesce(P, 0),
+      W = coalesce(W, 0),
+      D = coalesce(D, 0),
+      L = coalesce(L, 0),
+      GF = coalesce(GF, 0),
+      GA = coalesce(GA, 0),
+      GD = coalesce(GD, 0),
+      Pts = coalesce(Pts, 0)
     ) %>%
+    select(Group, Team, P, W, D, L, GF, GA, GD, Pts) %>%
     arrange(Group, desc(Pts), desc(GD), desc(GF))
 }
 standings <- calculate_standings(real_data)
@@ -457,7 +479,7 @@ ui <- page_sidebar(
           ),
           div(class = "widget-table",
               h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
-              selectInput("group_filter", NULL, choices = unique(standings$Group), width = "100%"),
+              selectInput("group_filter", NULL, choices = sort(unique(matches$match_label[matches$stage_id == 1])), width = "100%"),
               DTOutput("group_table_ui")
           )
       )
@@ -472,7 +494,9 @@ ui <- page_sidebar(
 server <- function(input, output, session) {
   
   observe({
-    updateSelectInput(session, "radar_team", choices = sort(unique(c(real_data$Team1, real_data$Team2))))
+    teams <- sort(unique(c(real_data$Team1, real_data$Team2)))
+    teams <- teams[teams %in% unname(english_to_spanish)]
+    updateSelectInput(session, "radar_team", choices = teams)
   })
   
   output$stats_ui <- renderUI({
