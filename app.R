@@ -200,31 +200,61 @@ get_radar_data <- function(team, real, pred) {
 }
 
 generate_bracket_ui <- function(matches_df) {
-  stages <- c("Round of 32" = 2, "Round of 16" = 3, "Quarter-Finals" = 4, "Semi-Finals" = 5, "Final" = 7)
-  cols <- lapply(names(stages), function(s_name) {
-    s_id <- stages[[s_name]]
-    stage_matches <- matches_df %>% filter(stage_id == s_id)
+  
+  make_col <- function(s_name, match_ids, side_class, is_first_or_last = FALSE) {
+    col_matches <- matches_df %>% filter(id %in% match_ids) %>% arrange(id)
     
-    # Group matches into pairs (matchups)
-    matchups <- lapply(seq(1, nrow(stage_matches), by=2), function(i) {
-      if(i == nrow(stage_matches)) { # Single match (e.g., Final)
+    matchups <- lapply(seq(1, nrow(col_matches), by=2), function(i) {
+      if(i == nrow(col_matches)) { 
         div(class="bracket-matchup",
-            div(class="bracket-match", stage_matches$match_label[i])
+            div(class="bracket-match", col_matches$match_label[i])
         )
       } else {
         div(class="bracket-matchup",
-            div(class="bracket-match", stage_matches$match_label[i]),
-            div(class="bracket-match", stage_matches$match_label[i+1])
+            div(class="bracket-match", col_matches$match_label[i]),
+            div(class="bracket-match", col_matches$match_label[i+1])
         )
       }
     })
     
-    div(class="bracket-col",
+    extra_class <- if(is_first_or_last) "first-col" else ""
+    if (side_class == "bracket-col-right" && is_first_or_last) extra_class <- "last-col"
+    
+    div(class=paste("bracket-col", side_class, extra_class),
         div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 12px;", s_name),
         do.call(tagList, matchups)
     )
-  })
-  div(class="bracket-container", do.call(tagList, cols))
+  }
+  
+  left_cols <- list(
+    make_col("Round of 32", 73:80, "bracket-col-left", TRUE),
+    make_col("Round of 16", 89:92, "bracket-col-left"),
+    make_col("Quarter-Finals", 97:98, "bracket-col-left"),
+    make_col("Semi-Finals", 101, "bracket-col-left")
+  )
+  
+  center_col <- div(class="bracket-col bracket-col-center",
+      div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 12px;", "Finals"),
+      div(class="bracket-matchup",
+          div(class="bracket-match final-match", matches_df$match_label[matches_df$id == 104]),
+          div(style="height: 40px;"),
+          div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;", "Third Place"),
+          div(class="bracket-match third-place-match", style="border-color: #555; color: #888;", matches_df$match_label[matches_df$id == 103])
+      )
+  )
+  
+  right_cols <- list(
+    make_col("Semi-Finals", 102, "bracket-col-right"),
+    make_col("Quarter-Finals", 99:100, "bracket-col-right"),
+    make_col("Round of 16", 93:96, "bracket-col-right"),
+    make_col("Round of 32", 81:88, "bracket-col-right", TRUE)
+  )
+  
+  div(class="bracket-container", 
+      do.call(tagList, left_cols), 
+      center_col, 
+      do.call(tagList, right_cols)
+  )
 }
 
 # --- UI ---
@@ -385,15 +415,21 @@ ui <- page_sidebar(
         border: 1px solid #7E7F83;
         padding: 20px;
         overflow-x: auto;
+        justify-content: space-between;
+        width: 100%;
       }
       .bracket-col {
         display: flex;
         flex-direction: column;
         justify-content: space-around;
-        width: 140px;
-        margin: 0 20px;
+        width: 130px;
+        margin: 0 10px;
         position: relative;
         flex-shrink: 0;
+      }
+      .bracket-col-center {
+        width: 150px;
+        margin: 0 30px;
       }
       .bracket-matchup {
         display: flex;
@@ -419,30 +455,68 @@ ui <- page_sidebar(
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       }
       
-      /* Lines combining two matches in a matchup */
-      .bracket-col:not(:last-child) .bracket-matchup::after {
+      /* LEFT SIDE */
+      .bracket-col-left .bracket-matchup::after {
         content: '';
         position: absolute;
-        right: -20px;
+        right: -10px;
         top: 25%;
         height: 50%;
-        width: 20px;
+        width: 10px;
         border-right: 2px solid #7E7F83;
         border-top: 2px solid #7E7F83;
         border-bottom: 2px solid #7E7F83;
         z-index: 1;
       }
-      /* Final single match does not have a pair to connect vertically */
-      .bracket-col:last-child .bracket-matchup::after {
-        display: none;
-      }
-      /* Line coming into the left side of matches in later rounds */
-      .bracket-col:not(:first-child) .bracket-match::before {
+      .bracket-col-left:not(.first-col) .bracket-match::before {
         content: '';
         position: absolute;
-        left: -20px;
+        left: -10px;
         top: 50%;
-        width: 20px;
+        width: 10px;
+        border-top: 2px solid #7E7F83;
+        z-index: 1;
+      }
+      
+      /* RIGHT SIDE */
+      .bracket-col-right .bracket-matchup::after {
+        content: '';
+        position: absolute;
+        left: -10px;
+        top: 25%;
+        height: 50%;
+        width: 10px;
+        border-left: 2px solid #7E7F83;
+        border-top: 2px solid #7E7F83;
+        border-bottom: 2px solid #7E7F83;
+        z-index: 1;
+      }
+      .bracket-col-right:not(.last-col) .bracket-match::before {
+        content: '';
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        width: 10px;
+        border-top: 2px solid #7E7F83;
+        z-index: 1;
+      }
+
+      /* CENTER COLUMN */
+      .bracket-col-center .bracket-match::before {
+        content: '';
+        position: absolute;
+        left: -30px;
+        top: 50%;
+        width: 30px;
+        border-top: 2px solid #7E7F83;
+        z-index: 1;
+      }
+      .bracket-col-center .bracket-match::after {
+        content: '';
+        position: absolute;
+        right: -30px;
+        top: 50%;
+        width: 30px;
         border-top: 2px solid #7E7F83;
         z-index: 1;
       }
