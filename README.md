@@ -2,7 +2,6 @@
 
 An interactive Shiny dashboard to analyze, visualize, and compare predictions against actual results for the **FIFA World Cup 2026**. 
 
-Built with a stunning, strict dark mode aesthetic using a custom `#202020` charcoal background and a cohesive dual-tone accent color system (`#749FD2` light blue for actual data, and `#16549b` dark blue for predicted data).
 
 ## Features
 
