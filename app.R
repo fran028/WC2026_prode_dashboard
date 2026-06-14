@@ -376,11 +376,22 @@ ui <- page_sidebar(
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
-        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .widget-table .form-group {
+        margin-bottom: 5px;
+      }
+      .widget-table .selectize-input {
+        min-height: 26px !important;
+        padding: 2px 8px !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
       }
       .widget-table .table td, .widget-table .table th {
-        padding: 3px 2px !important;
-        font-size: 10px !important;
+        padding: 4px 6px !important;
+        font-size: 11px !important;
         text-align: center !important;
         vertical-align: middle !important;
       }
@@ -659,9 +670,11 @@ ui <- page_sidebar(
               plotlyOutput("timeline_plot", height = "100%")
           ),
           div(class = "widget-table",
-              h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
+              h5("Group Table", style = "margin-top:0; margin-bottom:5px; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               selectInput("group_filter", NULL, choices = sort(unique(paste("Group", teams$group_letter))), width = "100%"),
-              DTOutput("group_table_ui")
+              div(style = "flex-grow: 1; overflow-y: auto;",
+                  DTOutput("group_table_ui")
+              )
           ),
           div(class = "widget-scorers",
               plotlyOutput("top_scorers_plot", height = "100%")
