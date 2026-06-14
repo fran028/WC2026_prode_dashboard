@@ -375,13 +375,18 @@ ui <- page_sidebar(
         background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+        padding: 10px;
+        overflow: auto;
       }
-      .widget-table .datatables {
-        flex: 1 1 auto;
+      .widget-table .table td, .widget-table .table th {
+        padding: 3px 2px !important;
+        font-size: 10px !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+      }
+      .widget-table .table td:first-child, .widget-table .table th:first-child {
+        text-align: left !important;
+        padding-left: 5px !important;
       }
       .widget-scorers {
         grid-column: 9 / 11;
@@ -733,8 +738,8 @@ server <- function(input, output, session) {
       mutate(`GF:GA` = paste0(GF, ":", GA)) %>%
       select(Team, P, W, D, L, `GF:GA`, GD, Pts)
       
-    datatable(d, options = list(dom = 't', paging = FALSE, scrollX = TRUE, scrollY = '100%'), rownames = FALSE, style = "bootstrap", fillContainer = TRUE) %>%
-      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#202020', fontSize = '11px')
+    datatable(d, options = list(dom = 't', paging = FALSE, scrollX = TRUE), rownames = FALSE, style = "bootstrap") %>%
+      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#202020')
   })
   
   output$top_scorers_plot <- renderPlotly({
