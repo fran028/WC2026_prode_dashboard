@@ -285,13 +285,7 @@ ui <- page_sidebar(
     hr(style = "border-top: 1px solid #7E7F83;"),
     h5("Prediction Compare", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px;"),
     p("Upload a prediction CSV to compare against the real results.", style = "font-size: 13px; color: #A0A0A0;"),
-    fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse..."),
-    hr(style = "border-top: 1px solid #7E7F83; margin-top: 20px;"),
-    div(
-      style = "display: flex; align-items: center; justify-content: space-between; padding-right: 10px;",
-      h5("Light Mode", style = "color: #D9C5B2; font-weight: bold; margin: 0;"),
-      checkboxInput("theme_toggle", "", value = FALSE)
-    )
+    fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse...")
   ),
   tags$head(
     tags$style(HTML("
