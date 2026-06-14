@@ -376,13 +376,31 @@ ui <- page_sidebar(
         padding: 10px;
       }
       .widget-table {
-        grid-column: 5 / 11;
+        grid-column: 5 / 9;
         grid-row: 5 / 7;
         background-color: #34312D;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 15px;
         overflow-y: auto;
+      }
+      .widget-scorers {
+        grid-column: 9 / 11;
+        grid-row: 5 / 6;
+        background-color: #34312D;
+        border: 1px solid #7E7F83;
+        border-radius: 8px;
+        padding: 5px;
+        overflow: hidden;
+      }
+      .widget-goaldiff {
+        grid-column: 9 / 11;
+        grid-row: 6 / 7;
+        background-color: #34312D;
+        border: 1px solid #7E7F83;
+        border-radius: 8px;
+        padding: 5px;
+        overflow: hidden;
       }
       .stats-accuracy-container {
         grid-column: 5 / 11;
@@ -563,6 +581,8 @@ ui <- page_sidebar(
       body.light-mode .widget-matches, 
       body.light-mode .widget-table, 
       body.light-mode .widget-timeline,
+      body.light-mode .widget-scorers,
+      body.light-mode .widget-goaldiff,
       body.light-mode .stat-square, 
       body.light-mode .stat-wide, 
       body.light-mode .widget-accuracy,
@@ -630,6 +650,12 @@ ui <- page_sidebar(
               h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               selectInput("group_filter", NULL, choices = sort(unique(matches$match_label[matches$stage_id == 1])), width = "100%"),
               DTOutput("group_table_ui")
+          ),
+          div(class = "widget-scorers",
+              plotlyOutput("top_scorers_plot", height = "100%")
+          ),
+          div(class = "widget-goaldiff",
+              plotlyOutput("goal_diff_plot", height = "100%")
           )
       )
     ),
@@ -693,7 +719,43 @@ server <- function(input, output, session) {
       select(Team, P, W, D, L, `GF:GA`, GD, Pts)
       
     datatable(d, options = list(dom = 't', paging = FALSE), rownames = FALSE, style = "bootstrap") %>%
-      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#34312D')
+      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#34312D', fontSize = '11px')
+  })
+  
+  output$top_scorers_plot <- renderPlotly({
+    st <- standings() %>% arrange(desc(GF)) %>% head(5)
+    
+    plot_ly(st, x = ~GF, y = ~reorder(Team, GF), type = 'bar', orientation = 'h',
+            marker = list(color = '#D9C5B2')) %>%
+      layout(
+        title = list(text = "Top Scorers (GF)", font = list(color = '#D9C5B2', size = 12)),
+        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
+        yaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
+        paper_bgcolor = 'rgba(0,0,0,0)',
+        plot_bgcolor = 'rgba(0,0,0,0)',
+        margin = list(l=40, r=10, t=30, b=20)
+      )
+  })
+
+  output$goal_diff_plot <- renderPlotly({
+    d <- standings() %>% filter(Group == input$group_filter)
+    d$GA_neg <- -d$GA
+    
+    plot_ly(d, y = ~reorder(Team, GD)) %>%
+      add_trace(x = ~GF, name = 'GF', type = 'bar', orientation = 'h',
+                marker = list(color = '#F1C40F')) %>%
+      add_trace(x = ~GA_neg, name = 'GA', type = 'bar', orientation = 'h',
+                marker = list(color = '#7E7F83')) %>%
+      layout(
+        title = list(text = paste("Goal Diff (GF vs GA)"), font = list(color = '#D9C5B2', size = 12)),
+        barmode = 'relative',
+        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
+        yaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
+        paper_bgcolor = 'rgba(0,0,0,0)',
+        plot_bgcolor = 'rgba(0,0,0,0)',
+        margin = list(l=40, r=10, t=30, b=20),
+        showlegend = FALSE
+      )
   })
   
   current_preds <- reactive({
