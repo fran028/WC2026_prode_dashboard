@@ -648,7 +648,7 @@ ui <- page_sidebar(
           ),
           div(class = "widget-table",
               h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
-              selectInput("group_filter", NULL, choices = sort(unique(matches$match_label[matches$stage_id == 1])), width = "100%"),
+              selectInput("group_filter", NULL, choices = sort(unique(paste("Group", teams$group_letter))), width = "100%"),
               DTOutput("group_table_ui")
           ),
           div(class = "widget-scorers",
