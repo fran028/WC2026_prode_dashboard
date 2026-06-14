@@ -277,7 +277,9 @@ ui <- page_sidebar(
   ),
   sidebar = sidebar(
     bg = "#34312D",
-    h3("World Cup 2026 Dashboard", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 20px; line-height: 1.2; text-align: center;"),
+    h3("World Cup 2026 Dashboard", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px; line-height: 1.2; text-align: center;"),
+    p("An interactive dashboard to visualize, analyze, and compare FIFA World Cup 2026 predictions against real tournament results. Features live bracket logic, interactive match maps, and an in-app data editor.", 
+      style = "font-size: 13px; color: #D9C5B2; line-height: 1.45; margin-bottom: 20px; text-align: center; opacity: 0.85;"),
     hr(style = "border-top: 1px solid #7E7F83;"),
     h5("Prediction Compare", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px;"),
     p("Upload a prediction CSV to compare against the real results.", style = "font-size: 13px; color: #A0A0A0;"),
@@ -576,7 +578,7 @@ ui <- page_sidebar(
             h4("Edit Predictions and Actual Results", style = "color: #D9C5B2;"),
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
-                column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Machine Learning Predictions"))),
+                column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
                 column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #F1C40F; color: #14110F; border: none; font-weight: bold;"))
             ),
             DTOutput("editor_table")
