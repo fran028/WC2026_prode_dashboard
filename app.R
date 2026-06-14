@@ -434,17 +434,17 @@ ui <- page_sidebar(
       
       .match-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #7E7F83; font-size: 13px; align-items: center;}
       .match-row:last-child { border-bottom: none; }
-      .actual-score { color: #0F79F2; font-weight: bold; margin: 0 2px;}
+      .actual-score { color: #749FD2; font-weight: bold; margin: 0 2px;}
       .pred-score { color: #A0A0A0; font-size: 11px; }
       
       .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
       .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #0F79F2; line-height: 1;}
+      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; background: linear-gradient(135deg, #749FD2, #16549b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1;}
       .accuracy-sub { font-size: clamp(9px, 8cqi, 12px); color: #A0A0A0; text-align: center; margin-top: 5px;}
       .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
-      .nav-underline .nav-link.active { color: #0F79F2 !important; border-bottom-color: #0F79F2 !important; }
+      .nav-underline .nav-link.active { color: #749FD2 !important; border-bottom-color: #16549b !important; }
       .nav-underline .nav-link { color: #D9C5B2; }
       
       /* Knockout Bracket CSS */
@@ -670,7 +670,7 @@ ui <- page_sidebar(
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
                 column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
-                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #0F79F2; color: #14110F; border: none; font-weight: bold;"))
+                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background: linear-gradient(135deg, #749FD2, #16549b); color: #F3F3F4; border: none; font-weight: bold;"))
             ),
             DTOutput("editor_table")
         )
@@ -685,7 +685,7 @@ server <- function(input, output, session) {
     if (isTRUE(input$theme_toggle)) {
       list(accent = "#0F62F2", line = "#ACCAF1", text = "#14110F", subtext = "#4A5568")
     } else {
-      list(accent = "#0F79F2", line = "#7E7F83", text = "#D9C5B2", subtext = "#A0A0A0")
+      list(accent = "#0F79F2", accent_light = "#749FD2", accent_dark = "#16549b", line = "#7E7F83", text = "#D9C5B2", subtext = "#A0A0A0")
     }
   })
   
@@ -737,7 +737,7 @@ server <- function(input, output, session) {
     st <- standings() %>% arrange(desc(GF)) %>% head(5)
     
     plot_ly(st, x = ~GF, y = ~reorder(Team, GF), type = 'bar', orientation = 'h',
-            marker = list(color = cols$accent)) %>%
+            marker = list(color = cols$accent_dark, line = list(color = cols$accent_light, width = 1.5))) %>%
       layout(
         title = list(text = "Top Scorers (GF)", font = list(color = cols$text, size = 12)),
         xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=9)),
@@ -755,7 +755,7 @@ server <- function(input, output, session) {
     
     plot_ly(d, y = ~reorder(Team, GD)) %>%
       add_trace(x = ~GF, name = 'GF', type = 'bar', orientation = 'h',
-                marker = list(color = cols$accent)) %>%
+                marker = list(color = cols$accent_dark, line = list(color = cols$accent_light, width = 1.5))) %>%
       add_trace(x = ~GA_neg, name = 'GA', type = 'bar', orientation = 'h',
                 marker = list(color = cols$line)) %>%
       layout(
@@ -813,7 +813,7 @@ server <- function(input, output, session) {
     cols <- tc()
     p <- plot_ly(trend, x = ~MatchDay_Label_real) %>%
       add_trace(y = ~ActualGoals, name = 'Actual', type = 'scatter', mode = 'lines+markers',
-                line = list(color = cols$accent, width = 2), marker = list(color = cols$accent, size = 6)) %>%
+                line = list(color = cols$accent_dark, width = 2), marker = list(color = cols$accent_light, size = 6, line = list(color = cols$accent_dark, width = 1))) %>%
       add_trace(y = ~PredGoals, name = 'Predicted', type = 'scatter', mode = 'lines+markers',
                 line = list(color = cols$subtext, width = 2, dash = 'dot'), marker = list(color = cols$subtext, size = 6)) %>%
       layout(
@@ -859,8 +859,8 @@ server <- function(input, output, session) {
         r = d$real,
         theta = d$categories,
         name = 'Actual',
-        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(15,98,242,0.4)' else 'rgba(241,196,15,0.4)',
-        line = list(color = cols$accent)
+        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(15,98,242,0.4)' else 'rgba(116, 159, 210, 0.4)',
+        line = list(color = cols$accent_dark, width = 2)
       ) %>%
       add_trace(
         r = d$pred,
@@ -892,7 +892,7 @@ server <- function(input, output, session) {
       type = 'scatter', 
       mode = 'markers+text',
       textposition = 'top center',
-      marker = list(color = cols$accent, size = 6)
+      marker = list(color = cols$accent_dark, size = 7, line = list(color = cols$accent_light, width = 1.5))
     ) %>%
       layout(
         title = list(text = "Goals For vs Goals Against", font = list(color = cols$text, size = 11)),
