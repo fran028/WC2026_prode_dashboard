@@ -614,6 +614,11 @@ ui <- page_sidebar(
       body.light-mode .nav-underline .nav-link.active { color: #0F62F2 !important; border-bottom-color: #0F62F2 !important; }
       body.light-mode .accuracy-sub, body.light-mode .pred-score { color: #14110F !important; }
       body.light-mode p { color: #14110F !important; }
+      body.light-mode .card-header {
+        background-color: #FFFFFF !important;
+        border-bottom: 1px solid #14110F !important;
+      }
+      body.light-mode .match-row { color: #14110F !important; }
     "))
   ),
   navset_card_underline(
