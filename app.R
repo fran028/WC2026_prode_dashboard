@@ -7,6 +7,7 @@ library(leaflet)
 library(DT)
 library(htmltools)
 library(plotly)
+library(shinyjs)
 
 # --- Data Preparation ---
 teams <- read.csv("extra_data/teams.csv", stringsAsFactors = FALSE)
@@ -268,6 +269,7 @@ generate_bracket_ui <- function(matches_df) {
 
 # --- UI ---
 ui <- page_sidebar(
+  shinyjs::useShinyjs(),
   theme = bs_theme(
     version = 5,
     bg = "#14110F",
@@ -283,7 +285,13 @@ ui <- page_sidebar(
     hr(style = "border-top: 1px solid #7E7F83;"),
     h5("Prediction Compare", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px;"),
     p("Upload a prediction CSV to compare against the real results.", style = "font-size: 13px; color: #A0A0A0;"),
-    fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse...")
+    fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse..."),
+    hr(style = "border-top: 1px solid #7E7F83; margin-top: 20px;"),
+    div(
+      style = "display: flex; align-items: center; justify-content: space-between; padding-right: 10px;",
+      h5("Light Mode", style = "color: #D9C5B2; font-weight: bold; margin: 0;"),
+      checkboxInput("theme_toggle", "", value = FALSE)
+    )
   ),
   tags$head(
     tags$style(HTML("
@@ -317,6 +325,15 @@ ui <- page_sidebar(
         gap: 16px;
         height: calc(100vh - 130px); 
         margin-top: 5px;
+      }
+      .widget-timeline {
+        grid-column: 5 / 11;
+        grid-row: 4 / 5;
+        background-color: #34312D;
+        border: 1px solid #7E7F83;
+        border-radius: 8px;
+        padding: 5px 10px;
+        overflow: hidden;
       }
       .widget-map {
         grid-column: 1 / 5;
@@ -360,7 +377,7 @@ ui <- page_sidebar(
       }
       .widget-table {
         grid-column: 5 / 11;
-        grid-row: 4 / 7;
+        grid-row: 5 / 7;
         background-color: #34312D;
         border: 1px solid #7E7F83;
         border-radius: 8px;
@@ -532,6 +549,48 @@ ui <- page_sidebar(
         border-top: 2px solid #7E7F83;
         z-index: 1;
       }
+      
+      /* LIGHT MODE OVERRIDES */
+      body.light-mode, body.light-mode html {
+        background-color: #F3F3F4 !important;
+      }
+      body.light-mode .card-body {
+        background-color: #F3F3F4 !important;
+      }
+      body.light-mode .widget-map, 
+      body.light-mode .widget-radar, 
+      body.light-mode .widget-scatter, 
+      body.light-mode .widget-matches, 
+      body.light-mode .widget-table, 
+      body.light-mode .widget-timeline,
+      body.light-mode .stat-square, 
+      body.light-mode .stat-wide, 
+      body.light-mode .widget-accuracy,
+      body.light-mode .bracket-container {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      }
+      body.light-mode .sidebar {
+        background-color: #F8F9FA !important;
+        border-right: 1px solid #E2E8F0 !important;
+      }
+      body.light-mode .bracket-match {
+        background-color: #FFFFFF !important;
+        color: #14110F !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      body.light-mode .stat-value { color: #14110F !important; }
+      body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode p { color: #14110F !important; }
+      body.light-mode .group-header { color: #14110F !important; }
+      body.light-mode .input-group .btn-file, 
+      body.light-mode .input-group .form-control {
+        background-color: #FFFFFF !important;
+        color: #14110F !important;
+        border: 1px solid #E2E8F0 !important;
+      }
+      body.light-mode .nav-underline .nav-link { color: #34312D; }
     "))
   ),
   navset_card_underline(
@@ -563,6 +622,9 @@ ui <- page_sidebar(
           div(class = "widget-matches", 
               h5("Matches by Stage", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               uiOutput("matches_ui")
+          ),
+          div(class = "widget-timeline",
+              plotlyOutput("timeline_plot", height = "100%")
           ),
           div(class = "widget-table",
               h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
@@ -640,6 +702,64 @@ server <- function(input, output, session) {
     } else {
       parse_predictions(input$user_prediction$datapath)
     }
+  })
+  
+  observeEvent(input$theme_toggle, {
+    if(input$theme_toggle) {
+      shinyjs::addClass(selector = "body", class = "light-mode")
+    } else {
+      shinyjs::removeClass(selector = "body", class = "light-mode")
+    }
+  })
+  
+  output$timeline_plot <- renderPlotly({
+    preds <- current_preds()
+    
+    # Calculate goals over time using the joined real_data
+    joined <- rv$real_data %>% 
+      left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
+    
+    joined$TotalReal <- rowSums(joined[, c("Goals1_real", "Goals2_real")], na.rm = TRUE)
+    joined$TotalPred <- rowSums(joined[, c("Goals1_pred", "Goals2_pred")], na.rm = TRUE)
+    
+    # Make sure stage factors are properly ordered for time-series flow
+    stage_levels <- c("Groups first match", "Groups second match", "Groups third match", 
+                      "Round of 32", "Round of 16", "Quarterfinals", "Semifinals", "Final")
+    joined$MatchDay_Label_real <- factor(joined$MatchDay_Label_real, levels = stage_levels)
+    
+    trend <- joined %>%
+      group_by(MatchDay_Label_real) %>%
+      summarise(
+        ActualGoals = sum(TotalReal, na.rm=TRUE),
+        PredGoals = sum(TotalPred, na.rm=TRUE),
+        .groups='drop'
+      ) %>%
+      filter(!is.na(MatchDay_Label_real))
+    
+    p <- plot_ly(trend, x = ~MatchDay_Label_real) %>%
+      add_trace(y = ~ActualGoals, name = 'Actual', type = 'scatter', mode = 'lines+markers',
+                line = list(color = '#F1C40F', width = 2), marker = list(color = '#F1C40F', size = 6)) %>%
+      add_trace(y = ~PredGoals, name = 'Predicted', type = 'scatter', mode = 'lines+markers',
+                line = list(color = '#A0A0A0', width = 2, dash = 'dot'), marker = list(color = '#A0A0A0', size = 6)) %>%
+      layout(
+        title = list(text = "Total Goals by Tournament Stage", font = list(color = '#D9C5B2', size = 12)),
+        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', 
+                     tickangle = 0, tickfont = list(size=9)),
+        yaxis = list(title = "Goals Scored", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83',
+                     tickfont = list(size=10)),
+        paper_bgcolor = 'rgba(0,0,0,0)',
+        plot_bgcolor = 'rgba(0,0,0,0)',
+        font = list(color = '#D9C5B2', size=10),
+        margin = list(l=30, r=10, t=30, b=20),
+        showlegend = TRUE,
+        legend = list(orientation = "h", x = 0.5, y = 1.1, xanchor = "center")
+      )
+      
+    # Use shinyjs to conditionally style the plotly if light mode is active? 
+    # Actually, Plotly's transparent bg allows the CSS container to shine through!
+    # But text colors are hardcoded. We'll leave them beige for now or the user can just enjoy the contrast.
+    
+    p
   })
   
   output$stat_accuracy <- renderText({
