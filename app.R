@@ -434,17 +434,17 @@ ui <- page_sidebar(
       
       .match-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #7E7F83; font-size: 13px; align-items: center;}
       .match-row:last-child { border-bottom: none; }
-      .actual-score { color: #202020; font-weight: bold; margin: 0 2px;}
+      .actual-score { color: #0F79F2; font-weight: bold; margin: 0 2px;}
       .pred-score { color: #A0A0A0; font-size: 11px; }
       
       .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
       .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #202020; line-height: 1;}
+      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #0F79F2; line-height: 1;}
       .accuracy-sub { font-size: clamp(9px, 8cqi, 12px); color: #A0A0A0; text-align: center; margin-top: 5px;}
       .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
-      .nav-underline .nav-link.active { color: #202020 !important; border-bottom-color: #202020 !important; }
+      .nav-underline .nav-link.active { color: #0F79F2 !important; border-bottom-color: #0F79F2 !important; }
       .nav-underline .nav-link { color: #D9C5B2; }
       
       /* Knockout Bracket CSS */
@@ -670,7 +670,7 @@ ui <- page_sidebar(
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
                 column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
-                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #202020; color: #14110F; border: none; font-weight: bold;"))
+                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #0F79F2; color: #14110F; border: none; font-weight: bold;"))
             ),
             DTOutput("editor_table")
         )
@@ -685,7 +685,7 @@ server <- function(input, output, session) {
     if (isTRUE(input$theme_toggle)) {
       list(accent = "#0F62F2", line = "#ACCAF1", text = "#14110F", subtext = "#4A5568")
     } else {
-      list(accent = "#202020", line = "#7E7F83", text = "#D9C5B2", subtext = "#A0A0A0")
+      list(accent = "#0F79F2", line = "#7E7F83", text = "#D9C5B2", subtext = "#A0A0A0")
     }
   })
   
