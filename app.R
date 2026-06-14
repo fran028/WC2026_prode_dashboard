@@ -369,6 +369,21 @@ ui <- page_sidebar(
         overflow-y: auto;
         padding: 10px;
       }
+      /* Custom Scrollbar for Matches Widget */
+      .widget-matches::-webkit-scrollbar {
+        width: 6px;
+      }
+      .widget-matches::-webkit-scrollbar-track {
+        background: #202020;
+        border-radius: 8px;
+      }
+      .widget-matches::-webkit-scrollbar-thumb {
+        background: #7E7F83;
+        border-radius: 8px;
+      }
+      .widget-matches::-webkit-scrollbar-thumb:hover {
+        background: #749FD2;
+      }
       .widget-table {
         grid-column: 5 / 9;
         grid-row: 5 / 7;
