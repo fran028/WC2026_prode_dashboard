@@ -275,10 +275,10 @@ ui <- page_sidebar(
     bg = "#14110F",
     fg = "#F3F3F4",
     primary = "#D9C5B2",
-    secondary = "#34312D"
+    secondary = "#202020"
   ),
   sidebar = sidebar(
-    bg = "#34312D",
+    bg = "#202020",
     h3("World Cup 2026 Dashboard", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px; line-height: 1.2; text-align: center;"),
     p("An interactive dashboard to visualize, analyze, and compare FIFA World Cup 2026 predictions against real tournament results. Features live bracket logic, interactive match maps, and an in-app data editor.", 
       style = "font-size: 13px; color: #D9C5B2; line-height: 1.45; margin-bottom: 20px; text-align: center; opacity: 0.85;"),
@@ -323,7 +323,7 @@ ui <- page_sidebar(
       .widget-timeline {
         grid-column: 5 / 11;
         grid-row: 4 / 5;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px 10px;
@@ -332,7 +332,7 @@ ui <- page_sidebar(
       .widget-map {
         grid-column: 1 / 5;
         grid-row: 1 / 7;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         overflow: hidden;
@@ -341,7 +341,7 @@ ui <- page_sidebar(
       .widget-radar {
         grid-column: 5 / 7;
         grid-row: 2 / 4;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -352,7 +352,7 @@ ui <- page_sidebar(
       .widget-scatter {
         grid-column: 7 / 11;
         grid-row: 2 / 4;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -363,7 +363,7 @@ ui <- page_sidebar(
       .widget-matches {
         grid-column: 11 / 13;
         grid-row: 1 / 7;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         overflow-y: auto;
@@ -372,7 +372,7 @@ ui <- page_sidebar(
       .widget-table {
         grid-column: 5 / 9;
         grid-row: 5 / 7;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 15px;
@@ -381,7 +381,7 @@ ui <- page_sidebar(
       .widget-scorers {
         grid-column: 9 / 11;
         grid-row: 5 / 6;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px;
@@ -390,7 +390,7 @@ ui <- page_sidebar(
       .widget-goaldiff {
         grid-column: 9 / 11;
         grid-row: 6 / 7;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px;
@@ -407,7 +407,7 @@ ui <- page_sidebar(
       .stat-square, .widget-accuracy {
         flex: 1 1 0;
         min-width: 0;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -421,7 +421,7 @@ ui <- page_sidebar(
       .stat-wide {
         flex: 2 1 0;
         min-width: 0;
-        background-color: #34312D;
+        background-color: #202020;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -451,7 +451,7 @@ ui <- page_sidebar(
       .bracket-container {
         display: flex;
         height: calc(100vh - 130px);
-        background-color: #34312D;
+        background-color: #202020;
         border-radius: 8px;
         border: 1px solid #7E7F83;
         padding: 20px;
@@ -604,7 +604,7 @@ ui <- page_sidebar(
         color: #14110F !important;
         border: 1px solid #E2E8F0 !important;
       }
-      body.light-mode .nav-underline .nav-link { color: #34312D; }
+      body.light-mode .nav-underline .nav-link { color: #202020; }
       body.light-mode .nav-underline .nav-link.active { color: #0F62F2 !important; border-bottom-color: #0F62F2 !important; }
       body.light-mode .accuracy-sub, body.light-mode .pred-score { color: #14110F !important; }
       body.light-mode p { color: #14110F !important; }
@@ -729,7 +729,7 @@ server <- function(input, output, session) {
       select(Team, P, W, D, L, `GF:GA`, GD, Pts)
       
     datatable(d, options = list(dom = 't', paging = FALSE), rownames = FALSE, style = "bootstrap") %>%
-      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#34312D', fontSize = '11px')
+      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#202020', fontSize = '11px')
   })
   
   output$top_scorers_plot <- renderPlotly({
@@ -1010,7 +1010,7 @@ server <- function(input, output, session) {
               rownames = FALSE,
               style = "bootstrap"
     ) %>%
-      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#34312D')
+      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#202020')
   })
   
   observeEvent(input$editor_table_cell_edit, {
