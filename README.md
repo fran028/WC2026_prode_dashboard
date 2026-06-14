@@ -2,13 +2,20 @@
 
 An interactive Shiny dashboard to analyze, visualize, and compare predictions against actual results for the **FIFA World Cup 2026**. 
 
+Built with a stunning, strict dark mode aesthetic using a custom `#202020` charcoal background and a cohesive dual-tone accent color system (`#749FD2` light blue for actual data, and `#16549b` dark blue for predicted data).
+
 ## Features
 
 - **Interactive Map**: A geographic overview of host cities, displaying which matches are played at each location.
-- **Prediction Comparison**: Upload your own prediction CSV files to compare them against the actual results. The app automatically calculates an accuracy score based on correct match outcomes (Win/Draw/Loss).
-- **Radar & Scatter Charts**: Visually compare average Goals For, Goals Against, and Points for each team.
-- **Group Standings**: Automatically calculated group stage tables based on real or predicted results.
+- **Data Editor**: Seamlessly edit your Predictions and Actual Results directly within the application. Changes are saved back to your local CSV files instantly.
+- **Prediction Comparison**: Upload your own prediction CSV files or use the built-in editor to compare them against the actual results. The app automatically calculates an accuracy score based on correct match outcomes.
+- **Dynamic Data Visualizations**: 
+  - **Radar Chart**: Compare team categories with beautifully overlaid Actual vs Predicted webs.
+  - **Scatter Plot**: A bird's-eye view of Goals For (GF) vs Goals Against (GA).
+  - **Timeline Trend**: Track tournament goal pacing stage-by-stage.
+- **Group Standings**: Automatically calculated group stage tables based on real or predicted results. The tables are strictly responsive and dynamically scale to fit the dashboard grid perfectly without overflowing.
 - **Knockout Bracket**: A fully symmetric, two-sided visualization of the knockout stages, from the Round of 32 down to the Final and Third-Place Playoff.
+- **Premium UI Mechanics**: Customized WebKit scrollbars embedded globally across data tables and widget cards to seamlessly match the sleek dark theme.
 
 ## Prerequisites
 
@@ -16,7 +23,7 @@ To run this dashboard locally, you need [R](https://cran.r-project.org/) install
 
 You will need the following R packages installed:
 ```R
-install.packages(c("shiny", "bslib", "dplyr", "tidyr", "stringr", "leaflet", "DT", "htmltools", "plotly"))
+install.packages(c("shiny", "bslib", "dplyr", "tidyr", "stringr", "leaflet", "DT", "htmltools", "plotly", "shinyjs"))
 ```
 
 ## How to Download and Run
@@ -39,6 +46,7 @@ install.packages(c("shiny", "bslib", "dplyr", "tidyr", "stringr", "leaflet", "DT
 
 ## How to Use
 
-1. **Explore the Group Stage**: When you launch the app, you will land on the Group Stage Dashboard. Click on map markers to see the matches hosted in each city. Select different teams from the dropdown in the Radar chart to analyze their performance stats.
+1. **Explore the Group Stage**: When you launch the app, you will land on the Group Stage Dashboard. Select different teams from the dropdown in the Radar chart to analyze their performance stats.
 2. **View the Bracket**: Click on the **"Knockout Bracket"** tab at the top to see the tournament tree and progression.
-3. **Upload Predictions**: On the left sidebar, click **"Browse..."** under *Load Prediction* to upload your own CSV predictions. The dashboard will instantly update all charts, tables, and accuracy scores to compare your file against the actual results!
+3. **Edit Data Live**: Head to the **"Data Editor"** tab to modify Actuals and Predictions on the fly.
+4. **Upload Predictions**: On the left sidebar, click **"Browse..."** under *Load Prediction* to upload your own CSV predictions. The dashboard will instantly update all charts, tables, and accuracy scores to compare your file against the actual results!
