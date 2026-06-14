@@ -376,7 +376,12 @@ ui <- page_sidebar(
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 15px;
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .widget-table .datatables {
+        flex: 1 1 auto;
       }
       .widget-scorers {
         grid-column: 9 / 11;
@@ -728,7 +733,7 @@ server <- function(input, output, session) {
       mutate(`GF:GA` = paste0(GF, ":", GA)) %>%
       select(Team, P, W, D, L, `GF:GA`, GD, Pts)
       
-    datatable(d, options = list(dom = 't', paging = FALSE), rownames = FALSE, style = "bootstrap") %>%
+    datatable(d, options = list(dom = 't', paging = FALSE, scrollX = TRUE, scrollY = '100%'), rownames = FALSE, style = "bootstrap", fillContainer = TRUE) %>%
       formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#202020', fontSize = '11px')
   })
   
