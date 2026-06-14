@@ -894,6 +894,7 @@ server <- function(input, output, session) {
       ) %>%
       layout(
         polar = list(
+          bgcolor = '#202020',
           radialaxis = list(visible = TRUE, range = c(0, max(c(d$real, d$pred, 3))), gridcolor=cols$line, linecolor=cols$line, tickfont=list(color=cols$text)),
           angularaxis = list(tickfont = list(color = cols$text), gridcolor=cols$line, linecolor=cols$line)
         ),
