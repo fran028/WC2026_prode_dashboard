@@ -440,7 +440,7 @@ ui <- page_sidebar(
       .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
       .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; background: linear-gradient(135deg, #749FD2, #16549b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1;}
+      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #749FD2; line-height: 1;}
       .accuracy-sub { font-size: clamp(9px, 8cqi, 12px); color: #A0A0A0; text-align: center; margin-top: 5px;}
       .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
@@ -670,7 +670,7 @@ ui <- page_sidebar(
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
                 column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
-                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background: linear-gradient(135deg, #749FD2, #16549b); color: #F3F3F4; border: none; font-weight: bold;"))
+                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #16549b; color: #F3F3F4; border: none; font-weight: bold;"))
             ),
             DTOutput("editor_table")
         )
@@ -737,7 +737,7 @@ server <- function(input, output, session) {
     st <- standings() %>% arrange(desc(GF)) %>% head(5)
     
     plot_ly(st, x = ~GF, y = ~reorder(Team, GF), type = 'bar', orientation = 'h',
-            marker = list(color = cols$accent_dark, line = list(color = cols$accent_light, width = 1.5))) %>%
+            marker = list(color = cols$accent_light)) %>%
       layout(
         title = list(text = "Top Scorers (GF)", font = list(color = cols$text, size = 12)),
         xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=9)),
@@ -755,7 +755,7 @@ server <- function(input, output, session) {
     
     plot_ly(d, y = ~reorder(Team, GD)) %>%
       add_trace(x = ~GF, name = 'GF', type = 'bar', orientation = 'h',
-                marker = list(color = cols$accent_dark, line = list(color = cols$accent_light, width = 1.5))) %>%
+                marker = list(color = cols$accent_dark)) %>%
       add_trace(x = ~GA_neg, name = 'GA', type = 'bar', orientation = 'h',
                 marker = list(color = cols$line)) %>%
       layout(
@@ -813,9 +813,9 @@ server <- function(input, output, session) {
     cols <- tc()
     p <- plot_ly(trend, x = ~MatchDay_Label_real) %>%
       add_trace(y = ~ActualGoals, name = 'Actual', type = 'scatter', mode = 'lines+markers',
-                line = list(color = cols$accent_dark, width = 2), marker = list(color = cols$accent_light, size = 6, line = list(color = cols$accent_dark, width = 1))) %>%
+                line = list(color = cols$accent_light, width = 2), marker = list(color = cols$accent_light, size = 6)) %>%
       add_trace(y = ~PredGoals, name = 'Predicted', type = 'scatter', mode = 'lines+markers',
-                line = list(color = cols$subtext, width = 2, dash = 'dot'), marker = list(color = cols$subtext, size = 6)) %>%
+                line = list(color = cols$accent_dark, width = 2, dash = 'dot'), marker = list(color = cols$accent_dark, size = 6)) %>%
       layout(
         title = list(text = "Total Goals by Tournament Stage", font = list(color = cols$text, size = 12)),
         xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, 
@@ -859,15 +859,15 @@ server <- function(input, output, session) {
         r = d$real,
         theta = d$categories,
         name = 'Actual',
-        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(15,98,242,0.4)' else 'rgba(116, 159, 210, 0.4)',
-        line = list(color = cols$accent_dark, width = 2)
+        fillcolor = 'rgba(116, 159, 210, 0.4)',
+        line = list(color = cols$accent_light, width = 2)
       ) %>%
       add_trace(
         r = d$pred,
         theta = d$categories,
         name = 'Predicted',
-        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(74,85,104,0.4)' else 'rgba(160,160,160,0.4)',
-        line = list(color = cols$subtext)
+        fillcolor = 'rgba(22, 84, 155, 0.4)',
+        line = list(color = cols$accent_dark, width = 2)
       ) %>%
       layout(
         polar = list(
@@ -892,7 +892,7 @@ server <- function(input, output, session) {
       type = 'scatter', 
       mode = 'markers+text',
       textposition = 'top center',
-      marker = list(color = cols$accent_dark, size = 7, line = list(color = cols$accent_light, width = 1.5))
+      marker = list(color = cols$accent_light, size = 6)
     ) %>%
       layout(
         title = list(text = "Goals For vs Goals Against", font = list(color = cols$text, size = 11)),
