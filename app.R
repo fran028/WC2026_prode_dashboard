@@ -729,8 +729,8 @@ server <- function(input, output, session) {
             marker = list(color = '#D9C5B2')) %>%
       layout(
         title = list(text = "Top Scorers (GF)", font = list(color = '#D9C5B2', size = 12)),
-        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
-        yaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
+        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
+        yaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         margin = list(l=40, r=10, t=30, b=20)
@@ -749,8 +749,8 @@ server <- function(input, output, session) {
       layout(
         title = list(text = paste("Goal Diff (GF vs GA)"), font = list(color = '#D9C5B2', size = 12)),
         barmode = 'relative',
-        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
-        yaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
+        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
+        yaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         margin = list(l=40, r=10, t=30, b=20),
@@ -805,9 +805,9 @@ server <- function(input, output, session) {
                 line = list(color = '#A0A0A0', width = 2, dash = 'dot'), marker = list(color = '#A0A0A0', size = 6)) %>%
       layout(
         title = list(text = "Total Goals by Tournament Stage", font = list(color = '#D9C5B2', size = 12)),
-        xaxis = list(title = "", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83', 
+        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', 
                      tickangle = 0, tickfont = list(size=9)),
-        yaxis = list(title = "Goals Scored", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83',
+        yaxis = list(title = "Goals Scored", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83',
                      tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
@@ -884,8 +884,8 @@ server <- function(input, output, session) {
     ) %>%
       layout(
         title = list(text = "Goals For vs Goals Against", font = list(color = '#D9C5B2', size = 11)),
-        xaxis = list(title = "Goals Made (GF)", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
-        yaxis = list(title = "Goals Received (GA)", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
+        xaxis = list(title = "Goals Made (GF)", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83'),
+        yaxis = list(title = "Goals Received (GA)", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83'),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         font = list(color = '#D9C5B2', size=10),
