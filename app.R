@@ -125,11 +125,11 @@ calculate_standings <- function(d) {
     ) %>%
     select(Group, Team, P, W, D, L, GF, GA, GD, Pts)
     
-  d1 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team1, GF = Goals1, GA = Goals2, Group)
-  d2 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team2, GF = Goals2, GA = Goals1, Group)
+  d1 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team1, GF = Goals1, GA = Goals2)
+  d2 <- d %>% filter(stage_id == 1 & !is.na(Goals1) & !is.na(Goals2)) %>% select(Team = Team2, GF = Goals2, GA = Goals1)
   
   played <- bind_rows(d1, d2) %>%
-    group_by(Group, Team) %>%
+    group_by(Team) %>%
     summarise(
       P = n(),
       W = sum(GF > GA),
@@ -143,7 +143,7 @@ calculate_standings <- function(d) {
     )
     
   base %>%
-    left_join(played, by = c("Group", "Team"), suffix = c("_base", "")) %>%
+    left_join(played, by = "Team", suffix = c("_base", "")) %>%
     mutate(
       P = coalesce(P, 0),
       W = coalesce(W, 0),
