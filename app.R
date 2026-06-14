@@ -387,6 +387,7 @@ ui <- page_sidebar(
         justify-content: center;
         align-items: center;
         overflow-y: auto;
+        container-type: inline-size;
       }
       .stat-wide {
         flex: 2 1 0;
@@ -410,8 +411,8 @@ ui <- page_sidebar(
       .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
       .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: 32px; font-weight: bold; color: #F1C40F; line-height: 1;}
-      .accuracy-sub { font-size: 11px; color: #A0A0A0; text-align: center; margin-top: 5px;}
+      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #F1C40F; line-height: 1;}
+      .accuracy-sub { font-size: clamp(9px, 8cqi, 12px); color: #A0A0A0; text-align: center; margin-top: 5px;}
       .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
       .nav-underline .nav-link.active { color: #F1C40F !important; border-bottom-color: #F1C40F !important; }
