@@ -369,19 +369,28 @@ ui <- page_sidebar(
         overflow-y: auto;
         padding: 10px;
       }
-      /* Custom Scrollbar for Matches Widget */
-      .widget-matches::-webkit-scrollbar {
+      /* Custom Scrollbars for Dashboard Widgets */
+      .widget-matches::-webkit-scrollbar,
+      .widget-table::-webkit-scrollbar,
+      .dataTables_scrollBody::-webkit-scrollbar {
         width: 6px;
+        height: 6px;
       }
-      .widget-matches::-webkit-scrollbar-track {
+      .widget-matches::-webkit-scrollbar-track,
+      .widget-table::-webkit-scrollbar-track,
+      .dataTables_scrollBody::-webkit-scrollbar-track {
         background: #202020;
         border-radius: 8px;
       }
-      .widget-matches::-webkit-scrollbar-thumb {
+      .widget-matches::-webkit-scrollbar-thumb,
+      .widget-table::-webkit-scrollbar-thumb,
+      .dataTables_scrollBody::-webkit-scrollbar-thumb {
         background: #7E7F83;
         border-radius: 8px;
       }
-      .widget-matches::-webkit-scrollbar-thumb:hover {
+      .widget-matches::-webkit-scrollbar-thumb:hover,
+      .widget-table::-webkit-scrollbar-thumb:hover,
+      .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
         background: #749FD2;
       }
       .widget-table {
