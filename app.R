@@ -845,6 +845,7 @@ server <- function(input, output, session) {
   })
   
   output$radar_plot <- renderPlotly({
+    cols <- tc()
     req(input$radar_team)
     team <- input$radar_team
     preds <- current_preds()
