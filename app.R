@@ -98,8 +98,21 @@ parse_predictions <- function(filepath) {
   return(data)
 }
 
-# Real Results
-real_data <- parse_predictions("predictions/resultados_reales.csv")
+save_predictions <- function(df, filepath) {
+  lines <- readLines(filepath, encoding = "UTF-8")
+  valid_lines_idx <- which(!str_detect(lines, "^;+$") & !str_detect(lines, "^;.*") & !str_detect(lines, "^Equipo;Resultado;;Equipo") & lines != "")
+  
+  for(i in 1:nrow(df)) {
+    idx <- df$MatchID[i]
+    if(idx <= length(valid_lines_idx)) {
+      line_num <- valid_lines_idx[idx]
+      g1 <- if(is.na(df$Goals1[i])) "NA" else df$Goals1[i]
+      g2 <- if(is.na(df$Goals2[i])) "NA" else df$Goals2[i]
+      lines[line_num] <- paste(df$Team1[i], g1, g2, df$Team2[i], sep=";")
+    }
+  }
+  writeLines(lines, filepath, useBytes=TRUE)
+}
 
 calculate_standings <- function(d) {
   # Base table with all group stage teams directly from teams.csv
@@ -143,11 +156,6 @@ calculate_standings <- function(d) {
     select(Group, Team, P, W, D, L, GF, GA, GD, Pts) %>%
     arrange(Group, desc(Pts), desc(GD), desc(GF))
 }
-standings <- calculate_standings(real_data)
-
-top_scorer <- standings %>% filter(GF == max(GF)) %>% pull(Team)
-least_conceded <- standings %>% filter(GA == min(GA)) %>% pull(Team)
-most_wins <- standings %>% filter(W == max(W)) %>% pull(Team)
 
 format_stat <- function(teams) {
   if (length(teams) > 5) return(paste0(paste(head(teams, 5), collapse = ", "), " (+", length(teams)-5, ")"))
@@ -562,6 +570,17 @@ ui <- page_sidebar(
     ),
     nav_panel("Knockout Bracket",
         uiOutput("bracket_ui")
+    ),
+    nav_panel("Data Editor",
+        div(style = "padding: 20px;",
+            h4("Edit Predictions and Actual Results", style = "color: #D9C5B2;"),
+            p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
+            fluidRow(
+                column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Machine Learning Predictions"))),
+                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #F1C40F; color: #14110F; border: none; font-weight: bold;"))
+            ),
+            DTOutput("editor_table")
+        )
     )
   )
 )
@@ -569,8 +588,19 @@ ui <- page_sidebar(
 # --- Server ---
 server <- function(input, output, session) {
   
+  # Reactive Data Storage
+  rv <- reactiveValues(
+    real_data = parse_predictions("predictions/resultados_reales.csv"),
+    ml_preds = parse_predictions("predictions/prediccion_ml.csv")
+  )
+  
+  standings <- reactive({ calculate_standings(rv$real_data) })
+  top_scorer <- reactive({ standings() %>% filter(GF == max(GF)) %>% pull(Team) })
+  least_conceded <- reactive({ standings() %>% filter(GA == min(GA)) %>% pull(Team) })
+  most_wins <- reactive({ standings() %>% filter(W == max(W)) %>% pull(Team) })
+  
   observe({
-    teams <- sort(unique(c(real_data$Team1, real_data$Team2)))
+    teams <- sort(unique(c(rv$real_data$Team1, rv$real_data$Team2)))
     teams <- teams[teams %in% unname(english_to_spanish)]
     updateSelectInput(session, "radar_team", choices = teams)
   })
@@ -585,14 +615,14 @@ server <- function(input, output, session) {
     }
     
     tagList(
-      make_stat_box("Top Scorer", top_scorer),
-      make_stat_box("Least Conceded", least_conceded),
-      make_stat_box("Most Wins", most_wins)
+      make_stat_box("Top Scorer", top_scorer()),
+      make_stat_box("Least Conceded", least_conceded()),
+      make_stat_box("Most Wins", most_wins())
     )
   })
   
   output$group_table_ui <- renderDT({
-    d <- standings %>% 
+    d <- standings() %>% 
       filter(Group == input$group_filter) %>%
       mutate(`GF:GA` = paste0(GF, ":", GA)) %>%
       select(Team, P, W, D, L, `GF:GA`, GD, Pts)
@@ -603,7 +633,7 @@ server <- function(input, output, session) {
   
   current_preds <- reactive({
     if (is.null(input$user_prediction)) {
-      parse_predictions("predictions/prediccion_ml.csv")
+      rv$ml_preds
     } else {
       parse_predictions(input$user_prediction$datapath)
     }
@@ -611,7 +641,7 @@ server <- function(input, output, session) {
   
   output$stat_accuracy <- renderText({
     preds <- current_preds()
-    acc <- calculate_accuracy(real_data, preds)
+    acc <- calculate_accuracy(rv$real_data, preds)
     paste0(acc, "%")
   })
   
@@ -619,9 +649,9 @@ server <- function(input, output, session) {
     req(input$radar_team)
     team <- input$radar_team
     preds <- current_preds()
-    if(is.null(preds)) preds <- real_data[0,]
+    if(is.null(preds)) preds <- rv$real_data[0,]
     
-    d <- get_radar_data(team, real_data, preds)
+    d <- get_radar_data(team, rv$real_data, preds)
     d$real[is.na(d$real)] <- 0
     d$pred[is.na(d$pred)] <- 0
     
@@ -658,7 +688,7 @@ server <- function(input, output, session) {
   
   output$scatter_plot <- renderPlotly({
     plot_ly(
-      data = standings, 
+      data = standings(), 
       x = ~GF, 
       y = ~GA, 
       text = ~Team,
@@ -682,7 +712,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     if(is.null(preds)) return(div("Error loading predictions.", style="color:red;"))
     
-    joined <- real_data %>% 
+    joined <- rv$real_data %>% 
       left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     
     match_divs <- lapply(unique(joined$MatchDay_Label_real), function(g) {
@@ -722,7 +752,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     
     if(is.null(preds)) {
-      joined <- real_data %>% 
+      joined <- rv$real_data %>% 
         rename(
           Team1_Abrev_real = Team1_Abrev,
           Team2_Abrev_real = Team2_Abrev,
@@ -730,7 +760,7 @@ server <- function(input, output, session) {
           MatchDay_Label_real = MatchDay_Label
         )
     } else {
-      joined <- real_data %>% 
+      joined <- rv$real_data %>% 
         left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     }
     joined <- joined %>% filter(!is.na(city_id_real))
@@ -763,6 +793,57 @@ server <- function(input, output, session) {
   
   output$bracket_ui <- renderUI({
     generate_bracket_ui(matches)
+  })
+  
+  # --- Data Editor Logic ---
+  editor_data <- reactive({
+    if (input$editor_dataset == "Actual Results") {
+      rv$real_data
+    } else {
+      rv$ml_preds
+    }
+  })
+  
+  output$editor_table <- renderDT({
+    d <- editor_data() %>%
+      select(MatchID, MatchDay_Label, Group, Team1, Goals1, Goals2, Team2)
+    datatable(d, 
+              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 7))),
+              options = list(paging = FALSE, scrollX = TRUE, scrollY = "600px", dom = 't'),
+              rownames = FALSE,
+              style = "bootstrap"
+    ) %>%
+      formatStyle(columns = names(d), color = '#F3F3F4', backgroundColor = '#34312D')
+  })
+  
+  observeEvent(input$editor_table_cell_edit, {
+    info <- input$editor_table_cell_edit
+    i <- info$row
+    j <- info$col + 1 # JS is 0-indexed, R is 1-indexed
+    v <- info$value
+    
+    d <- editor_data()
+    if (j == 5) {
+      d$Goals1[i] <- as.numeric(v)
+    } else if (j == 6) {
+      d$Goals2[i] <- as.numeric(v)
+    }
+    
+    if (input$editor_dataset == "Actual Results") {
+      rv$real_data <- d
+    } else {
+      rv$ml_preds <- d
+    }
+  })
+  
+  observeEvent(input$save_editor, {
+    if (input$editor_dataset == "Actual Results") {
+      save_predictions(rv$real_data, "predictions/resultados_reales.csv")
+      showNotification("Actual Results saved to file!", type = "message")
+    } else {
+      save_predictions(rv$ml_preds, "predictions/prediccion_ml.csv")
+      showNotification("ML Predictions saved to file!", type = "message")
+    }
   })
 }
 

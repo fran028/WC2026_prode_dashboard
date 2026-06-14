@@ -1,4 +1,4 @@
-﻿;;;
+;;;
 ;Resultados Reales;;
 Equipo;Resultado;;Equipo
 México;2;0;Sudáfrica
@@ -10,14 +10,14 @@ Sudáfrica;NA;NA;Corea del Sur
 ;;;
 Equipo;Resultado;;Equipo
 Canadá;1;1;Bosnia y Herzegovina
-Catar;NA;NA;Suiza
+Catar;1;1;Suiza
 Suiza;NA;NA;Bosnia y Herzegovina
 Canadá;NA;NA;Catar
 Suiza;NA;NA;Canadá
 Bosnia y Herzegovina;NA;NA;Catar
 ;;;
 Equipo;Resultado;;Equipo
-Brasil;NA;NA;Marruecos
+Brasil;1;1;Marruecos
 Haití;NA;NA;Escocia
 Escocia;NA;NA;Marruecos
 Brasil;NA;NA;Haití
