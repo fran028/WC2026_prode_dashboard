@@ -588,12 +588,12 @@ ui <- page_sidebar(
       body.light-mode .widget-accuracy,
       body.light-mode .bracket-container {
         background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
+        border: 1px solid #ACCAF1 !important;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       }
       body.light-mode .sidebar {
-        background-color: #F8F9FA !important;
-        border-right: 1px solid #E2E8F0 !important;
+        background-color: #ACCAF1 !important;
+        border-right: 1px solid #ACCAF1 !important;
       }
       body.light-mode .bracket-match {
         background-color: #FFFFFF !important;
@@ -611,6 +611,9 @@ ui <- page_sidebar(
         border: 1px solid #E2E8F0 !important;
       }
       body.light-mode .nav-underline .nav-link { color: #34312D; }
+      body.light-mode .nav-underline .nav-link.active { color: #0F62F2 !important; border-bottom-color: #0F62F2 !important; }
+      body.light-mode .accuracy-sub, body.light-mode .pred-score { color: #14110F !important; }
+      body.light-mode p { color: #14110F !important; }
     "))
   ),
   navset_card_underline(
@@ -679,6 +682,14 @@ ui <- page_sidebar(
 # --- Server ---
 server <- function(input, output, session) {
   
+  tc <- reactive({
+    if (isTRUE(input$theme_toggle)) {
+      list(accent = "#0F62F2", line = "#ACCAF1", text = "#14110F", subtext = "#4A5568")
+    } else {
+      list(accent = "#F1C40F", line = "#7E7F83", text = "#D9C5B2", subtext = "#A0A0A0")
+    }
+  })
+  
   # Reactive Data Storage
   rv <- reactiveValues(
     real_data = parse_predictions("predictions/resultados_reales.csv"),
@@ -723,14 +734,15 @@ server <- function(input, output, session) {
   })
   
   output$top_scorers_plot <- renderPlotly({
+    cols <- tc()
     st <- standings() %>% arrange(desc(GF)) %>% head(5)
     
     plot_ly(st, x = ~GF, y = ~reorder(Team, GF), type = 'bar', orientation = 'h',
-            marker = list(color = '#D9C5B2')) %>%
+            marker = list(color = cols$accent)) %>%
       layout(
-        title = list(text = "Top Scorers (GF)", font = list(color = '#D9C5B2', size = 12)),
-        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE, tickfont = list(size=9)),
-        yaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE, tickfont = list(size=10)),
+        title = list(text = "Top Scorers (GF)", font = list(color = cols$text, size = 12)),
+        xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=9)),
+        yaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         margin = list(l=40, r=10, t=30, b=20)
@@ -738,19 +750,20 @@ server <- function(input, output, session) {
   })
 
   output$goal_diff_plot <- renderPlotly({
+    cols <- tc()
     d <- standings() %>% filter(Group == input$group_filter)
     d$GA_neg <- -d$GA
     
     plot_ly(d, y = ~reorder(Team, GD)) %>%
       add_trace(x = ~GF, name = 'GF', type = 'bar', orientation = 'h',
-                marker = list(color = '#F1C40F')) %>%
+                marker = list(color = cols$accent)) %>%
       add_trace(x = ~GA_neg, name = 'GA', type = 'bar', orientation = 'h',
-                marker = list(color = '#7E7F83')) %>%
+                marker = list(color = cols$line)) %>%
       layout(
-        title = list(text = paste("Goal Diff (GF vs GA)"), font = list(color = '#D9C5B2', size = 12)),
+        title = list(text = paste("Goal Diff (GF vs GA)"), font = list(color = cols$text, size = 12)),
         barmode = 'relative',
-        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zerolinecolor = '#7E7F83', tickfont = list(size=9)),
-        yaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE, tickfont = list(size=10)),
+        xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zerolinecolor = cols$line, tickfont = list(size=9)),
+        yaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         margin = list(l=40, r=10, t=30, b=20),
@@ -798,23 +811,24 @@ server <- function(input, output, session) {
       ) %>%
       filter(!is.na(MatchDay_Label_real))
     
+    cols <- tc()
     p <- plot_ly(trend, x = ~MatchDay_Label_real) %>%
       add_trace(y = ~ActualGoals, name = 'Actual', type = 'scatter', mode = 'lines+markers',
-                line = list(color = '#F1C40F', width = 2), marker = list(color = '#F1C40F', size = 6)) %>%
+                line = list(color = cols$accent, width = 2), marker = list(color = cols$accent, size = 6)) %>%
       add_trace(y = ~PredGoals, name = 'Predicted', type = 'scatter', mode = 'lines+markers',
-                line = list(color = '#A0A0A0', width = 2, dash = 'dot'), marker = list(color = '#A0A0A0', size = 6)) %>%
+                line = list(color = cols$subtext, width = 2, dash = 'dot'), marker = list(color = cols$subtext, size = 6)) %>%
       layout(
-        title = list(text = "Total Goals by Tournament Stage", font = list(color = '#D9C5B2', size = 12)),
-        xaxis = list(title = "", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE, 
+        title = list(text = "Total Goals by Tournament Stage", font = list(color = cols$text, size = 12)),
+        xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, 
                      tickangle = 0, tickfont = list(size=9)),
-        yaxis = list(title = "Goals Scored", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE,
+        yaxis = list(title = "Goals Scored", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE,
                      tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
-        font = list(color = '#D9C5B2', size=10),
+        font = list(color = cols$text, size=10),
         margin = list(l=30, r=10, t=30, b=20),
         showlegend = TRUE,
-        legend = list(orientation = "h", x = 0.5, y = 1.1, xanchor = "center")
+        legend = list(orientation = "h", x = 0.5, y = 1.1, xanchor = "center", font = list(color = cols$text))
       )
       
     # Use shinyjs to conditionally style the plotly if light mode is active? 
@@ -840,38 +854,36 @@ server <- function(input, output, session) {
     d$real[is.na(d$real)] <- 0
     d$pred[is.na(d$pred)] <- 0
     
-    plot_ly(
-      type = 'scatterpolar',
-      fill = 'toself'
-    ) %>%
+    plot_ly(type = 'scatterpolar', mode = 'lines+markers') %>%
       add_trace(
         r = d$real,
         theta = d$categories,
         name = 'Actual',
-        fillcolor = 'rgba(241, 196, 15, 0.4)',
-        line = list(color = '#F1C40F')
+        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(15,98,242,0.4)' else 'rgba(241,196,15,0.4)',
+        line = list(color = cols$accent)
       ) %>%
       add_trace(
         r = d$pred,
         theta = d$categories,
         name = 'Predicted',
-        fillcolor = 'rgba(160, 160, 160, 0.4)',
-        line = list(color = '#A0A0A0')
+        fillcolor = if(isTRUE(input$theme_toggle)) 'rgba(74,85,104,0.4)' else 'rgba(160,160,160,0.4)',
+        line = list(color = cols$subtext)
       ) %>%
       layout(
         polar = list(
-          radialaxis = list(visible = TRUE, range = c(0, max(c(d$real, d$pred, 3))), gridcolor="#7E7F83", linecolor="#7E7F83", tickfont=list(color="#D9C5B2")),
-          angularaxis = list(tickfont = list(color = '#D9C5B2'), gridcolor="#7E7F83", linecolor="#7E7F83")
+          radialaxis = list(visible = TRUE, range = c(0, max(c(d$real, d$pred, 3))), gridcolor=cols$line, linecolor=cols$line, tickfont=list(color=cols$text)),
+          angularaxis = list(tickfont = list(color = cols$text), gridcolor=cols$line, linecolor=cols$line)
         ),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
-        font = list(color = '#D9C5B2', size=10),
+        font = list(color = cols$text, size=10),
         showlegend = FALSE,
         margin = list(l=20, r=20, t=20, b=20)
       )
   })
   
   output$scatter_plot <- renderPlotly({
+    cols <- tc()
     plot_ly(
       data = standings(), 
       x = ~GF, 
@@ -880,15 +892,15 @@ server <- function(input, output, session) {
       type = 'scatter', 
       mode = 'markers+text',
       textposition = 'top center',
-      marker = list(color = '#F1C40F', size = 6)
+      marker = list(color = cols$accent, size = 6)
     ) %>%
       layout(
-        title = list(text = "Goals For vs Goals Against", font = list(color = '#D9C5B2', size = 11)),
-        xaxis = list(title = "Goals Made (GF)", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE),
-        yaxis = list(title = "Goals Received (GA)", color = '#D9C5B2', showgrid = FALSE, showline = TRUE, linecolor = '#7E7F83', zeroline = FALSE),
+        title = list(text = "Goals For vs Goals Against", font = list(color = cols$text, size = 11)),
+        xaxis = list(title = "Goals Made (GF)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE),
+        yaxis = list(title = "Goals Received (GA)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
-        font = list(color = '#D9C5B2', size=10),
+        font = list(color = cols$text, size=10),
         margin = list(l=40, r=20, t=30, b=40)
       )
   })
