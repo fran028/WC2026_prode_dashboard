@@ -272,16 +272,16 @@ ui <- page_sidebar(
     version = 5,
     bg = "#14110F",
     fg = "#F3F3F4",
-    primary = "#0066FF",
+    primary = "#D9C5B2",
     secondary = "#34312D"
   ),
   sidebar = sidebar(
     bg = "#34312D",
-    h3("World Cup 2026 Dashboard", style = "color: #0066FF; font-weight: bold; margin-bottom: 15px; line-height: 1.2; text-align: center;"),
+    h3("World Cup 2026 Dashboard", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px; line-height: 1.2; text-align: center;"),
     p("An interactive dashboard to visualize, analyze, and compare FIFA World Cup 2026 predictions against real tournament results. Features live bracket logic, interactive match maps, and an in-app data editor.", 
-      style = "font-size: 13px; color: #F3F3F4; line-height: 1.45; margin-bottom: 20px; text-align: center; opacity: 0.85;"),
+      style = "font-size: 13px; color: #D9C5B2; line-height: 1.45; margin-bottom: 20px; text-align: center; opacity: 0.85;"),
     hr(style = "border-top: 1px solid #7E7F83;"),
-    h5("Prediction Compare", style = "color: #FF3366; font-weight: bold; margin-bottom: 15px;"),
+    h5("Prediction Compare", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px;"),
     p("Upload a prediction CSV to compare against the real results.", style = "font-size: 13px; color: #A0A0A0;"),
     fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse...")
   ),
@@ -302,7 +302,7 @@ ui <- page_sidebar(
       /* Style file input button and text to contrast with sidebar */
       .input-group .btn-file, .input-group .form-control {
         background-color: #14110F !important;
-        color: #F3F3F4 !important;
+        color: #D9C5B2 !important;
         border: 1px solid #7E7F83 !important;
       }
       .input-group .btn-file:hover {
@@ -404,18 +404,18 @@ ui <- page_sidebar(
       
       .match-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #7E7F83; font-size: 13px; align-items: center;}
       .match-row:last-child { border-bottom: none; }
-      .actual-score { color: #00CC66; font-weight: bold; margin: 0 2px;}
-      .pred-score { color: #FF3366; font-size: 11px; }
+      .actual-score { color: #F1C40F; font-weight: bold; margin: 0 2px;}
+      .pred-score { color: #A0A0A0; font-size: 11px; }
       
       .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
-      .stat-value { font-size: 14px; font-weight: bold; color: #F3F3F4; line-height: 1.2; text-align: center; word-break: break-word;}
+      .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: 32px; font-weight: bold; color: #00CC66; line-height: 1;}
+      .accuracy-score { font-size: 32px; font-weight: bold; color: #F1C40F; line-height: 1;}
       .accuracy-sub { font-size: 11px; color: #A0A0A0; text-align: center; margin-top: 5px;}
-      .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #0066FF; font-size: 14px; border-bottom: 1px solid #7E7F83;}
+      .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
-      .nav-underline .nav-link.active { color: #0066FF !important; border-bottom-color: #0066FF !important; }
-      .nav-underline .nav-link { color: #A0A0A0; }
+      .nav-underline .nav-link.active { color: #F1C40F !important; border-bottom-color: #F1C40F !important; }
+      .nav-underline .nav-link { color: #D9C5B2; }
       
       /* Knockout Bracket CSS */
       .bracket-container {
@@ -457,7 +457,7 @@ ui <- page_sidebar(
         border-radius: 6px; 
         padding: 8px; 
         text-align: center; 
-        color: #F3F3F4; 
+        color: #D9C5B2; 
         font-size: 12px; 
         font-weight: bold; 
         width: 100%; 
@@ -560,11 +560,11 @@ ui <- page_sidebar(
               )
           ),
           div(class = "widget-matches", 
-              h5("Matches by Stage", style = "margin-top:0; font-weight:bold; color:#0066FF; font-size:14px;"),
+              h5("Matches by Stage", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               uiOutput("matches_ui")
           ),
           div(class = "widget-table",
-              h5("Group Table", style = "margin-top:0; font-weight:bold; color:#0066FF; font-size:14px;"),
+              h5("Group Table", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               selectInput("group_filter", NULL, choices = sort(unique(matches$match_label[matches$stage_id == 1])), width = "100%"),
               DTOutput("group_table_ui")
           )
@@ -575,11 +575,11 @@ ui <- page_sidebar(
     ),
     nav_panel("Data Editor",
         div(style = "padding: 20px;",
-            h4("Edit Predictions and Actual Results", style = "color: #0066FF;"),
+            h4("Edit Predictions and Actual Results", style = "color: #D9C5B2;"),
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
                 column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
-                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #0066FF; color: #FFFFFF; border: none; font-weight: bold;"))
+                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #F1C40F; color: #14110F; border: none; font-weight: bold;"))
             ),
             DTOutput("editor_table")
         )
@@ -608,18 +608,18 @@ server <- function(input, output, session) {
   })
   
   output$stats_ui <- renderUI({
-    make_stat_box <- function(title, teams, color_hex) {
+    make_stat_box <- function(title, teams) {
       class_name <- if (length(teams) > 1) "stat-wide" else "stat-square"
       div(class = class_name,
           div(class="stat-title", title),
-          div(class="stat-value", style=paste0("color: ", color_hex, ";"), format_stat(teams))
+          div(class="stat-value", format_stat(teams))
       )
     }
     
     tagList(
-      make_stat_box("Top Scorer", top_scorer(), "#FF3366"),
-      make_stat_box("Least Conceded", least_conceded(), "#00CC66"),
-      make_stat_box("Most Wins", most_wins(), "#0066FF")
+      make_stat_box("Top Scorer", top_scorer()),
+      make_stat_box("Least Conceded", least_conceded()),
+      make_stat_box("Most Wins", most_wins())
     )
   })
   
@@ -665,24 +665,24 @@ server <- function(input, output, session) {
         r = d$real,
         theta = d$categories,
         name = 'Actual',
-        fillcolor = 'rgba(0, 204, 102, 0.35)',
-        line = list(color = '#00CC66')
+        fillcolor = 'rgba(241, 196, 15, 0.4)',
+        line = list(color = '#F1C40F')
       ) %>%
       add_trace(
         r = d$pred,
         theta = d$categories,
         name = 'Predicted',
-        fillcolor = 'rgba(255, 51, 102, 0.35)',
-        line = list(color = '#FF3366')
+        fillcolor = 'rgba(160, 160, 160, 0.4)',
+        line = list(color = '#A0A0A0')
       ) %>%
       layout(
         polar = list(
-          radialaxis = list(visible = TRUE, range = c(0, max(c(d$real, d$pred, 3))), gridcolor="#7E7F83", linecolor="#7E7F83", tickfont=list(color="#F3F3F4")),
-          angularaxis = list(tickfont = list(color = '#F3F3F4'), gridcolor="#7E7F83", linecolor="#7E7F83")
+          radialaxis = list(visible = TRUE, range = c(0, max(c(d$real, d$pred, 3))), gridcolor="#7E7F83", linecolor="#7E7F83", tickfont=list(color="#D9C5B2")),
+          angularaxis = list(tickfont = list(color = '#D9C5B2'), gridcolor="#7E7F83", linecolor="#7E7F83")
         ),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
-        font = list(color = '#F3F3F4', size=10),
+        font = list(color = '#D9C5B2', size=10),
         showlegend = FALSE,
         margin = list(l=20, r=20, t=20, b=20)
       )
@@ -697,15 +697,15 @@ server <- function(input, output, session) {
       type = 'scatter', 
       mode = 'markers+text',
       textposition = 'top center',
-      marker = list(color = '#0066FF', size = 6)
+      marker = list(color = '#F1C40F', size = 6)
     ) %>%
       layout(
-        title = list(text = "Goals For vs Goals Against", font = list(color = '#0066FF', size = 11)),
-        xaxis = list(title = "Goals Made (GF)", color = '#F3F3F4', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
-        yaxis = list(title = "Goals Received (GA)", color = '#F3F3F4', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
+        title = list(text = "Goals For vs Goals Against", font = list(color = '#D9C5B2', size = 11)),
+        xaxis = list(title = "Goals Made (GF)", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
+        yaxis = list(title = "Goals Received (GA)", color = '#D9C5B2', gridcolor = '#7E7F83', zerolinecolor = '#7E7F83'),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
-        font = list(color = '#F3F3F4', size=10),
+        font = list(color = '#D9C5B2', size=10),
         margin = list(l=40, r=20, t=30, b=40)
       )
   })
@@ -788,7 +788,7 @@ server <- function(input, output, session) {
         ~lon, ~lat, 
         popup = ~popup_text,
         radius = 8,
-        color = "#0066FF",
+        color = "#D9C5B2",
         stroke = FALSE, fillOpacity = 0.8
       )
   })
