@@ -16,7 +16,7 @@ An interactive Shiny dashboard to analyze, visualize, and compare predictions ag
 - **Group Standings**: Automatically calculated group stage tables based on real or predicted results. The tables are strictly responsive and dynamically scale to fit the dashboard grid perfectly without overflowing.
 - **Knockout Bracket**: A fully symmetric, two-sided visualization of the knockout stages, from the Round of 32 down to the Final and Third-Place Playoff.
 - **Premium UI Mechanics**: Customized WebKit scrollbars embedded globally across data tables and widget cards to seamlessly match the sleek dark theme.
-
+- **Modular Codebase**: Clean, efficient architecture. Data preparation logic and helper functions are modularized into `R/helpers.R` while custom dark/light theme CSS properties are isolated in `www/style.css` for easy maintenance.
 ## Prerequisites
 
 To run this dashboard locally, you need [R](https://cran.r-project.org/) installed. We also highly recommend using [RStudio](https://posit.co/download/rstudio-desktop/).
