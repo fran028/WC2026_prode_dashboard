@@ -53,6 +53,45 @@ spanish_to_fifa <- function(spanish_name) {
   return(substr(spanish_name, 1, 3))
 }
 
+clean_kickoff_time <- function(kickoff_at) {
+  if (is.na(kickoff_at) || kickoff_at == "") return(list(local_time = "", tz_label = "", utc_time = ""))
+  
+  # Extract local offset
+  offset_str <- str_extract(kickoff_at, "[-+][0-9]{2}$")
+  local_offset <- if (!is.na(offset_str)) as.numeric(offset_str) else -4
+  
+  # Extract datetime string without offset
+  dt_part <- sub("[-+][0-9]{2}$", "", kickoff_at)
+  
+  # Parse EDT datetime (represented by the raw string)
+  edt_dt <- as.POSIXlt(dt_part, format = "%Y-%m-%d %H:%M:%S")
+  
+  # Calculate local datetime by adding (local_offset - (-4)) hours
+  offset_diff_seconds <- (local_offset + 4) * 3600
+  local_dt <- edt_dt + offset_diff_seconds
+  
+  # Calculate UTC datetime by adding 4 hours to EDT
+  utc_dt <- edt_dt + (4 * 3600)
+  
+  # Format local time nicely
+  local_formatted <- format(local_dt, "%a, %d %b %H:%M")
+  
+  # Get timezone label
+  tz_label <- case_when(
+    local_offset == -4 ~ "EDT",
+    local_offset == -5 ~ "CDT",
+    local_offset == -6 ~ "CST",
+    local_offset == -7 ~ "PDT",
+    TRUE ~ paste0("UTC", offset_str)
+  )
+  
+  list(
+    local_time = local_formatted,
+    tz_label = tz_label,
+    utc_time = format(utc_dt, "%Y-%m-%d %H:%M:%S UTC")
+  )
+}
+
 parse_predictions <- function(filepath) {
   if(!file.exists(filepath)) return(NULL)
   lines <- readLines(filepath, encoding = "UTF-8")
@@ -76,14 +115,48 @@ parse_predictions <- function(filepath) {
   
   # Join with matches to get correct stage_id, match_label and city_id
   stage_names <- c("Group Stage", "Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Third Place Playoff", "Final")
+  
+  data$Group_from_team <- sapply(data$Team1, function(name) {
+    eng <- spanish_to_english[name]
+    if (is.na(eng)) eng <- name
+    grp <- teams$group_letter[teams$team_name == eng]
+    if (length(grp) > 0) return(paste0("Group ", grp[1]))
+    return(NA_character_)
+  })
+
+  # Map prediction row to matches.csv row dynamically
+  data$matches_id <- sapply(seq_len(nrow(data)), function(i) {
+    if (i > 72) {
+      return(i) # For knockout stage, 73 to 104 correspond directly to matches 73 to 104
+    }
+    
+    eng1 <- spanish_to_english[data$Team1[i]]
+    if (is.na(eng1)) eng1 <- data$Team1[i]
+    
+    eng2 <- spanish_to_english[data$Team2[i]]
+    if (is.na(eng2)) eng2 <- data$Team2[i]
+    
+    id1 <- teams$id[teams$team_name == eng1]
+    id2 <- teams$id[teams$team_name == eng2]
+    
+    if (length(id1) > 0 && length(id2) > 0) {
+      idx <- which(matches$stage_id == 1 & 
+                   ((matches$home_team_id == id1[1] & matches$away_team_id == id2[1]) |
+                    (matches$home_team_id == id2[1] & matches$away_team_id == id1[1])))
+      if (length(idx) > 0) return(matches$id[idx[1]])
+    }
+    return(i)
+  })
+
   data <- data %>%
-    left_join(matches, by = c("MatchID" = "id")) %>%
+    left_join(matches, by = c("matches_id" = "id")) %>%
+    left_join(host_cities, by = c("city_id" = "id")) %>%
     mutate(
-      Group = if_else(stage_id == 1, match_label, stage_names[stage_id]),
+      Group = if_else(stage_id == 1, Group_from_team, stage_names[stage_id]),
       MatchDay_Label = factor(case_when(
-        stage_id == 1 & match_number <= 24 ~ "Groups first match",
-        stage_id == 1 & match_number <= 48 ~ "Groups second match",
-        stage_id == 1 & match_number <= 72 ~ "Groups third match",
+        stage_id == 1 & (MatchID %% 6 == 1 | MatchID %% 6 == 2) ~ "Groups first match",
+        stage_id == 1 & (MatchID %% 6 == 3 | MatchID %% 6 == 4) ~ "Groups second match",
+        stage_id == 1 & (MatchID %% 6 == 5 | MatchID %% 6 == 0) ~ "Groups third match",
         stage_id == 2 ~ "Round of 32",
         stage_id == 3 ~ "Round of 16",
         stage_id == 4 ~ "Quarter-final",
@@ -92,7 +165,14 @@ parse_predictions <- function(filepath) {
         stage_id == 7 ~ "Final",
         TRUE ~ "Unknown"
       ), levels = c("Groups first match", "Groups second match", "Groups third match", "Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Third Place Playoff", "Final"))
-    )
+    ) %>%
+    select(-Group_from_team)
+  
+  # Clean kickoff times
+  cleaned_list <- lapply(data$kickoff_at, clean_kickoff_time)
+  data$Kickoff_Local <- sapply(cleaned_list, function(x) x$local_time)
+  data$Kickoff_TZ <- sapply(cleaned_list, function(x) x$tz_label)
+  data$Kickoff_UTC <- sapply(cleaned_list, function(x) x$utc_time)
   
   data$Team1_Abrev <- sapply(data$Team1, spanish_to_fifa)
   data$Team2_Abrev <- sapply(data$Team2, spanish_to_fifa)
@@ -159,8 +239,9 @@ calculate_standings <- function(d) {
 }
 
 format_stat <- function(teams) {
-  if (length(teams) > 5) return(paste0(paste(head(teams, 5), collapse = ", "), " (+", length(teams)-5, ")"))
-  return(paste(teams, collapse = ", "))
+  if (length(teams) == 0) return("")
+  if (length(teams) > 1) return(paste0(teams[1], " +", length(teams) - 1))
+  return(teams[1])
 }
 
 calculate_accuracy <- function(real, pred) {
@@ -320,10 +401,29 @@ ui <- page_sidebar(
         height: calc(100vh - 130px); 
         margin-top: 5px;
       }
+      .widget-middle-stats {
+        grid-column: 5 / 9;
+        grid-row: 3 / 4;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .stat-box-middle {
+        background-color: #14110F;
+        border: 1px solid #7E7F83;
+        border-radius: 8px;
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        container-type: inline-size;
+      }
       .widget-timeline {
-        grid-column: 5 / 11;
+        grid-column: 5 / 9;
         grid-row: 4 / 5;
-        background-color: #202020;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px 10px;
@@ -332,27 +432,25 @@ ui <- page_sidebar(
       .widget-map {
         grid-column: 1 / 5;
         grid-row: 1 / 7;
-        background-color: #202020;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         overflow: hidden;
         position: relative;
       }
       .widget-radar {
-        grid-column: 5 / 7;
-        grid-row: 2 / 4;
-        background-color: #202020;
+        display: none;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
         overflow: hidden;
-        display: flex;
         flex-direction: column;
       }
       .widget-scatter {
         grid-column: 7 / 11;
-        grid-row: 2 / 4;
-        background-color: #202020;
+        grid-row: 1 / 3;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -363,40 +461,32 @@ ui <- page_sidebar(
       .widget-matches {
         grid-column: 11 / 13;
         grid-row: 1 / 7;
-        background-color: #202020;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         overflow-y: auto;
         padding: 10px;
       }
-      /* Custom Scrollbars for Dashboard Widgets */
-      .widget-matches::-webkit-scrollbar,
-      .widget-table::-webkit-scrollbar,
-      .dataTables_scrollBody::-webkit-scrollbar {
+      /* Custom Scrollbars for all elements */
+      *::-webkit-scrollbar {
         width: 6px;
         height: 6px;
       }
-      .widget-matches::-webkit-scrollbar-track,
-      .widget-table::-webkit-scrollbar-track,
-      .dataTables_scrollBody::-webkit-scrollbar-track {
+      *::-webkit-scrollbar-track {
         background: #202020;
         border-radius: 8px;
       }
-      .widget-matches::-webkit-scrollbar-thumb,
-      .widget-table::-webkit-scrollbar-thumb,
-      .dataTables_scrollBody::-webkit-scrollbar-thumb {
+      *::-webkit-scrollbar-thumb {
         background: #7E7F83;
         border-radius: 8px;
       }
-      .widget-matches::-webkit-scrollbar-thumb:hover,
-      .widget-table::-webkit-scrollbar-thumb:hover,
-      .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+      *::-webkit-scrollbar-thumb:hover {
         background: #749FD2;
       }
       .widget-table {
         grid-column: 5 / 9;
         grid-row: 5 / 7;
-        background-color: #202020;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -425,8 +515,8 @@ ui <- page_sidebar(
       }
       .widget-scorers {
         grid-column: 9 / 11;
-        grid-row: 5 / 6;
-        background-color: #202020;
+        grid-row: 3 / 5;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px;
@@ -434,25 +524,25 @@ ui <- page_sidebar(
       }
       .widget-goaldiff {
         grid-column: 9 / 11;
-        grid-row: 6 / 7;
-        background-color: #202020;
+        grid-row: 5 / 7;
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 5px;
         overflow: hidden;
       }
       .stats-accuracy-container {
-        grid-column: 5 / 11;
-        grid-row: 1 / 2;
-        display: flex;
+        grid-column: 5 / 7;
+        grid-row: 1 / 3;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
         gap: 16px;
         width: 100%;
         height: 100%;
       }
-      .stat-square, .widget-accuracy {
-        flex: 1 1 0;
-        min-width: 0;
-        background-color: #202020;
+      .stat-square, .stat-wide, .widget-accuracy {
+        background-color: #14110F;
         border: 1px solid #7E7F83;
         border-radius: 8px;
         padding: 10px;
@@ -463,34 +553,101 @@ ui <- page_sidebar(
         overflow-y: auto;
         container-type: inline-size;
       }
-      .stat-wide {
-        flex: 2 1 0;
-        min-width: 0;
-        background-color: #202020;
-        border: 1px solid #7E7F83;
-        border-radius: 8px;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        overflow-y: auto;
-      }
       
       .match-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #7E7F83; font-size: 13px; align-items: center;}
       .match-row:last-child { border-bottom: none; }
       .actual-score { color: #749FD2; font-weight: bold; margin: 0 2px;}
       .pred-score { color: #A0A0A0; font-size: 11px; }
       
-      .stat-title { font-size: 11px; color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
-      .stat-value { font-size: 14px; font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
+      .stat-title { font-size: clamp(9px, 8cqi, 14px); color: #7E7F83; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-align: center;}
+      .stat-value { font-size: clamp(12px, 12cqi, 28px); font-weight: bold; color: #D9C5B2; line-height: 1.2; text-align: center; word-break: break-word;}
       
-      .accuracy-score { font-size: clamp(16px, 15cqi, 48px); font-weight: bold; color: #749FD2; line-height: 1;}
+      .accuracy-score { font-size: clamp(16px, 32cqi, 48px); font-weight: bold; color: #749FD2; line-height: 1;}
       .accuracy-sub { font-size: clamp(9px, 8cqi, 12px); color: #A0A0A0; text-align: center; margin-top: 5px;}
       .group-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #D9C5B2; font-size: 14px; border-bottom: 1px solid #7E7F83;}
       
       .nav-underline .nav-link.active { color: #749FD2 !important; border-bottom-color: #16549b !important; }
       .nav-underline .nav-link { color: #D9C5B2; }
+      
+      /* Calendar CSS */
+      .calendar-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 150px);
+        background-color: #202020;
+        border: 1px solid #7E7F83;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 10px;
+      }
+      .calendar-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        font-weight: bold;
+        color: #749FD2;
+        margin-bottom: 5px;
+        font-size: 14px;
+        border-bottom: 1px solid #7E7F83;
+        padding-bottom: 5px;
+      }
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(7, 1fr);
+        gap: 6px;
+        flex-grow: 1;
+        min-height: 0;
+      }
+      .calendar-day {
+        background-color: #14110F;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow-y: auto;
+      }
+      .calendar-date {
+        font-size: 13px;
+        font-weight: bold;
+        color: #7E7F83;
+        text-align: right;
+        margin-bottom: 4px;
+      }
+      .calendar-month-label {
+        position: absolute;
+        top: 4px;
+        left: 6px;
+        font-size: 10px;
+        font-weight: bold;
+        color: #14110F;
+        background-color: #749FD2;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        z-index: 10;
+      }
+      .calendar-match {
+        background-color: #2A2723;
+        border-left: 3px solid #16549b;
+        border-radius: 4px;
+        margin-bottom: 4px;
+        padding: 4px 6px;
+        font-size: 11px;
+        display: flex;
+        justify-content: space-between;
+        color: #A0A0A0;
+      }
+      .calendar-match.real-result {
+        border-left-color: #0F79F2;
+        background-color: #202020;
+        color: #F3F3F4;
+      }
+      .match-teams { font-weight: bold; }
+      .match-score { font-family: monospace; }
+      .real-result .match-score { color: #749FD2; font-weight: bold; }
       
       /* Knockout Bracket CSS */
       .bracket-container {
@@ -658,6 +815,171 @@ ui <- page_sidebar(
         border-bottom: 1px solid #14110F !important;
       }
       body.light-mode .match-row { color: #14110F !important; }
+      
+      /* Leaflet Popup styling to match premium dark theme */
+      .leaflet-popup-content-wrapper {
+        background-color: #14110F !important;
+        color: #D9C5B2 !important;
+        border: 1px solid #7E7F83 !important;
+        border-radius: 12px !important;
+        padding: 0px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+      }
+      .leaflet-popup-content {
+        margin: 0 !important;
+        padding: 14px 16px !important;
+        font-family: 'Outfit', 'Inter', sans-serif !important;
+      }
+      .leaflet-popup-tip {
+        background-color: #14110F !important;
+        border: 1px solid #7E7F83 !important;
+      }
+      
+      /* Custom inner elements for popup */
+      .city-popup-header {
+        border-bottom: 1px solid #2D2A28;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+      }
+      .city-popup-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #F3F3F4;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .city-popup-country {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: #749FD2;
+        letter-spacing: 1px;
+      }
+      .city-popup-venue {
+        font-size: 11px;
+        color: #A0A0A0;
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+      }
+      .city-popup-venue-icon {
+        margin-right: 4px;
+        color: #0F79F2;
+      }
+      .city-popup-matches-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #D9C5B2;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .city-popup-match-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px dashed #2D2A28;
+        font-size: 11px;
+      }
+      .city-popup-match-row:last-child {
+        border-bottom: none;
+      }
+      .city-popup-match-stage {
+        color: #A0A0A0;
+        font-size: 9px;
+        background-color: #201C1A;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+      .city-popup-match-teams {
+        color: #F3F3F4;
+        font-weight: 500;
+        flex-grow: 1;
+        line-height: 1.2;
+      }
+      .city-popup-match-score {
+        font-family: monospace;
+        font-weight: 700;
+        margin-left: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .city-popup-score-real {
+        background-color: rgba(217, 197, 178, 0.15) !important;
+        color: #D9C5B2 !important;
+        border: 1px solid rgba(217, 197, 178, 0.3) !important;
+      }
+      .city-popup-score-pred {
+        background-color: rgba(15, 121, 242, 0.15) !important;
+        color: #749FD2 !important;
+        border: 1px solid rgba(15, 121, 242, 0.3) !important;
+      }
+      .city-popup-score-tbd {
+        background-color: #201C1A !important;
+        color: #7E7F83 !important;
+      }
+      .city-popup-no-matches {
+        color: #A0A0A0;
+        font-size: 11px;
+        font-style: italic;
+        padding: 4px 0;
+      }
+      .city-popup-match-time {
+        font-size: 9px;
+        color: #7E7F83;
+        margin-top: 2px;
+        display: block;
+      }
+      
+      /* Light Mode overrides for Leaflet Popups */
+      body.light-mode .leaflet-popup-content-wrapper {
+        background-color: #FFFFFF !important;
+        color: #14110F !important;
+        border: 1px solid #ACCAF1 !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+      }
+      body.light-mode .leaflet-popup-tip {
+        background-color: #FFFFFF !important;
+        border: 1px solid #ACCAF1 !important;
+      }
+      body.light-mode .city-popup-header {
+        border-bottom: 1px solid #E2E8F0;
+      }
+      body.light-mode .city-popup-title span {
+        color: #14110F;
+      }
+      body.light-mode .city-popup-matches-title {
+        color: #14110F;
+      }
+      body.light-mode .city-popup-match-row {
+        border-bottom: 1px dashed #E2E8F0;
+      }
+      body.light-mode .city-popup-match-stage {
+        background-color: #F3F3F4;
+        color: #4A5568;
+      }
+      body.light-mode .city-popup-match-teams {
+        color: #14110F;
+      }
+      body.light-mode .city-popup-score-real {
+        background-color: rgba(217, 197, 178, 0.25) !important;
+        color: #7E5F43 !important;
+        border: 1px solid rgba(217, 197, 178, 0.5) !important;
+      }
+      body.light-mode .city-popup-score-pred {
+        background-color: rgba(15, 98, 242, 0.08) !important;
+        color: #0F62F2 !important;
+        border: 1px solid rgba(15, 98, 242, 0.2) !important;
+      }
+      body.light-mode .city-popup-score-tbd {
+        background-color: #F3F3F4 !important;
+        color: #7E7F83 !important;
+      }
     "))
   ),
   navset_card_underline(
@@ -690,6 +1012,9 @@ ui <- page_sidebar(
               h5("Matches by Stage", style = "margin-top:0; font-weight:bold; color:#D9C5B2; font-size:14px;"),
               uiOutput("matches_ui")
           ),
+          div(class = "widget-middle-stats",
+              uiOutput("middle_stats_ui", style = "display: contents;")
+          ),
           div(class = "widget-timeline",
               plotlyOutput("timeline_plot", height = "100%")
           ),
@@ -707,6 +1032,9 @@ ui <- page_sidebar(
               plotlyOutput("goal_diff_plot", height = "100%")
           )
       )
+    ),
+    nav_panel("Calendar",
+        uiOutput("calendar_ui")
     ),
     nav_panel("Knockout Bracket",
         uiOutput("bracket_ui")
@@ -755,10 +1083,14 @@ server <- function(input, output, session) {
   
   output$stats_ui <- renderUI({
     make_stat_box <- function(title, teams) {
+      val <- as.character(format_stat(teams))
       class_name <- if (length(teams) > 1) "stat-wide" else "stat-square"
+      len <- max(nchar(val), 1)
+      cqi_val <- min(150 / len, 32)
+      fs <- sprintf("clamp(12px, %fcqi, 48px)", cqi_val)
       div(class = class_name,
           div(class="stat-title", title),
-          div(class="stat-value", format_stat(teams))
+          div(class="stat-value", style=paste0("font-size: ", fs, ";"), val)
       )
     }
     
@@ -766,6 +1098,61 @@ server <- function(input, output, session) {
       make_stat_box("Top Scorer", top_scorer()),
       make_stat_box("Least Conceded", least_conceded()),
       make_stat_box("Most Wins", most_wins())
+    )
+  })
+  
+  output$middle_stats_ui <- renderUI({
+    d_real <- rv$real_data %>% filter(!is.na(Goals1) & !is.na(Goals2))
+    
+    # 1. Average Goals per Match
+    avg_goals <- if(nrow(d_real) > 0) round(mean(d_real$Goals1 + d_real$Goals2), 2) else 0
+    
+    # 2. Most Common Scoreline
+    if(nrow(d_real) > 0) {
+      scorelines <- paste(pmax(d_real$Goals1, d_real$Goals2), pmin(d_real$Goals1, d_real$Goals2), sep="-")
+      most_common <- names(sort(table(scorelines), decreasing=TRUE))[1]
+    } else {
+      most_common <- "-"
+    }
+    
+    # 3. Biggest Blowout
+    if(nrow(d_real) > 0) {
+      d_real$margin <- abs(d_real$Goals1 - d_real$Goals2)
+      max_margin_idx <- which.max(d_real$margin)
+      blowout_match <- d_real[max_margin_idx, ]
+      biggest_blowout <- paste0(blowout_match$Team1_Abrev, " ", blowout_match$Goals1, "-", blowout_match$Goals2, " ", blowout_match$Team2_Abrev)
+    } else {
+      biggest_blowout <- "-"
+    }
+    
+    # 4. Average Goal Error
+    preds <- current_preds()
+    avg_err <- "-"
+    if(!is.null(preds) && nrow(d_real) > 0) {
+      j <- d_real %>% left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred")) %>%
+             filter(!is.na(Goals1_pred) & !is.na(Goals2_pred))
+      if(nrow(j) > 0) {
+        err <- mean(abs(j$Goals1_real - j$Goals1_pred) + abs(j$Goals2_real - j$Goals2_pred))
+        avg_err <- round(err, 2)
+      }
+    }
+    
+    make_middle_box <- function(title, val) {
+      val <- as.character(val)
+      len <- max(nchar(val), 1)
+      cqi_val <- min(150 / len, 32)
+      fs <- sprintf("clamp(12px, %fcqi, 48px)", cqi_val)
+      div(class="stat-box-middle", 
+          div(class="stat-title", title), 
+          div(class="stat-value", style=paste0("font-size: ", fs, ";"), val)
+      )
+    }
+    
+    tagList(
+      make_middle_box("Avg Goals/Match", avg_goals),
+      make_middle_box("Common Score", most_common),
+      make_middle_box("Biggest Blowout", biggest_blowout),
+      make_middle_box("Avg Goal Error", avg_err)
     )
   })
   
@@ -781,10 +1168,26 @@ server <- function(input, output, session) {
   
   output$top_scorers_plot <- renderPlotly({
     cols <- tc()
-    st <- standings() %>% arrange(desc(GF)) %>% head(5)
+    st <- standings() %>% arrange(desc(GF)) %>% head(10) %>% mutate(Team_Abrev = sapply(Team, spanish_to_fifa))
     
-    plot_ly(st, x = ~GF, y = ~reorder(Team, GF), type = 'bar', orientation = 'h',
-            marker = list(color = cols$accent_light)) %>%
+    # Dynamic blue color gradient based on goals (GF)
+    accent_light <- if (!is.null(cols$accent_light)) cols$accent_light else "#ACCAF1"
+    accent_dark <- if (!is.null(cols$accent_dark)) cols$accent_dark else "#0F62F2"
+    
+    min_gf <- min(st$GF)
+    max_gf <- max(st$GF)
+    
+    if (max_gf == min_gf) {
+      st$bar_color <- accent_dark
+    } else {
+      color_func <- colorRampPalette(c(accent_light, accent_dark))
+      # Map GF range to a 100-level color gradient
+      norm_val <- round(((st$GF - min_gf) / (max_gf - min_gf)) * 99) + 1
+      st$bar_color <- color_func(100)[norm_val]
+    }
+    
+    plot_ly(st, x = ~GF, y = ~reorder(Team_Abrev, GF), type = 'bar', orientation = 'h',
+            marker = list(color = ~bar_color)) %>%
       layout(
         title = list(text = "Top Scorers (GF)", font = list(color = cols$text, size = 12)),
         xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, tickfont = list(size=9)),
@@ -797,10 +1200,10 @@ server <- function(input, output, session) {
 
   output$goal_diff_plot <- renderPlotly({
     cols <- tc()
-    d <- standings() %>% filter(Group == input$group_filter)
+    d <- standings() %>% filter(Group == input$group_filter) %>% mutate(Team_Abrev = sapply(Team, spanish_to_fifa))
     d$GA_neg <- -d$GA
     
-    plot_ly(d, y = ~reorder(Team, GD)) %>%
+    plot_ly(d, y = ~reorder(Team_Abrev, GD)) %>%
       add_trace(x = ~GF, name = 'GF', type = 'bar', orientation = 'h',
                 marker = list(color = cols$accent_dark)) %>%
       add_trace(x = ~GA_neg, name = 'GA', type = 'bar', orientation = 'h',
@@ -847,6 +1250,7 @@ server <- function(input, output, session) {
     stage_levels <- c("Groups first match", "Groups second match", "Groups third match", 
                       "Round of 32", "Round of 16", "Quarterfinals", "Semifinals", "Final")
     joined$MatchDay_Label_real <- factor(joined$MatchDay_Label_real, levels = stage_levels)
+    levels(joined$MatchDay_Label_real) <- c("GRd 1", "GRd 2", "GRd 3", "R32", "R16", "QF", "SF", "Final")
     
     trend <- joined %>%
       group_by(MatchDay_Label_real) %>%
@@ -866,13 +1270,13 @@ server <- function(input, output, session) {
       layout(
         title = list(text = "Total Goals by Tournament Stage", font = list(color = cols$text, size = 12)),
         xaxis = list(title = "", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, 
-                     tickangle = 0, tickfont = list(size=9)),
+                     tickangle = -45, tickfont = list(size=9)),
         yaxis = list(title = "Goals Scored", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE,
                      tickfont = list(size=10)),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         font = list(color = cols$text, size=10),
-        margin = list(l=30, r=10, t=30, b=20),
+        margin = list(l=30, r=10, t=30, b=50),
         showlegend = TRUE,
         legend = list(orientation = "h", x = 0.5, y = 1.1, xanchor = "center", font = list(color = cols$text))
       )
@@ -932,20 +1336,72 @@ server <- function(input, output, session) {
   
   output$scatter_plot <- renderPlotly({
     cols <- tc()
+    
+    # Group teams by identical GF and GA values to prevent overlapping dots
+    grouped_data <- standings() %>%
+      mutate(Team_Abrev = sapply(Team, spanish_to_fifa)) %>%
+      group_by(GF, GA) %>%
+      summarise(
+        Teams_List = paste(Team_Abrev, collapse = ", "),
+        Teams_Count = n(),
+        .groups = 'drop'
+      ) %>%
+      mutate(
+        # Improved hover visuals showing all teams in the group
+        Hover_Text = paste0(
+          "<b>GF:</b> ", GF, " | <b>GA:</b> ", GA, "<br>",
+          "<b>Teams (", Teams_Count, "):</b><br>",
+          sapply(Teams_List, function(x) {
+            teams <- strsplit(x, ", ")[[1]]
+            paste(paste0("• ", teams), collapse = "<br>")
+          })
+        ),
+        # Label: show exact list if <= 2 teams, otherwise show first two with (+N)
+        Label = sapply(Teams_List, function(x) {
+          teams <- strsplit(x, ", ")[[1]]
+          if (length(teams) <= 2) {
+            paste(teams, collapse = ", ")
+          } else {
+            paste0(paste(teams[1:2], collapse = ", "), " (+", length(teams) - 2, ")")
+          }
+        })
+      )
+    
+    # Calculate colors based on team count (gradient color instead of scaling size)
+    accent_light <- if (!is.null(cols$accent_light)) cols$accent_light else "#ACCAF1"
+    accent_dark <- if (!is.null(cols$accent_dark)) cols$accent_dark else "#0F62F2"
+    
+    max_count <- max(grouped_data$Teams_Count)
+    if (max_count == 1) {
+      grouped_data$color <- accent_light
+    } else {
+      color_func <- colorRampPalette(c(accent_light, accent_dark))
+      # Map Teams_Count from 1 to max_count to 1-100 color levels
+      norm_val <- round(((grouped_data$Teams_Count - 1) / (max_count - 1)) * 99) + 1
+      grouped_data$color <- color_func(100)[norm_val]
+    }
+    
     plot_ly(
-      data = standings(), 
+      data = grouped_data, 
       x = ~GF, 
       y = ~GA, 
-      text = ~Team,
+      text = ~Label,
+      hovertext = ~Hover_Text,
+      hoverinfo = 'text',
       type = 'scatter', 
       mode = 'markers+text',
       textposition = 'top center',
-      marker = list(color = cols$accent_light, size = 6)
+      # Constant size, but color gets darker with team count
+      marker = list(
+        color = ~color, 
+        size = 8,
+        line = list(color = cols$line, width = 1)
+      )
     ) %>%
       layout(
         title = list(text = "Goals For vs Goals Against", font = list(color = cols$text, size = 11)),
-        xaxis = list(title = "Goals Made (GF)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE),
-        yaxis = list(title = "Goals Received (GA)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE),
+        xaxis = list(title = "Goals Made (GF)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, dtick = 1),
+        yaxis = list(title = "Goals Received (GA)", color = cols$text, showgrid = FALSE, showline = TRUE, linecolor = cols$line, zeroline = FALSE, dtick = 1),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',
         font = list(color = cols$text, size=10),
@@ -972,16 +1428,39 @@ server <- function(input, output, session) {
         goals1_pred_txt <- if(is.na(row$Goals1_pred)) "" else paste0("(", row$Goals1_pred, ")")
         goals2_pred_txt <- if(is.na(row$Goals2_pred)) "" else paste0("(", row$Goals2_pred, ")")
         
-        div(class = "match-row",
-            span(row$Team1_Abrev_real, style = "width: 35px; text-align: left;"),
-            span(
-              span(class="actual-score", goals1_real_txt),
-              span(class="pred-score", goals1_pred_txt),
-              " - ",
-              span(class="pred-score", goals2_pred_txt),
-              span(class="actual-score", goals2_real_txt)
+        # Format kickoff date/time and venue using _real suffix
+        kickoff_info <- if (!is.null(row$Kickoff_Local_real) && !is.na(row$Kickoff_Local_real) && row$Kickoff_Local_real != "") {
+          paste0(row$Kickoff_Local_real, " ", row$Kickoff_TZ_real)
+        } else {
+          ""
+        }
+        
+        venue_info <- if (!is.null(row$city_name_real) && !is.na(row$city_name_real)) {
+          row$city_name_real
+        } else {
+          ""
+        }
+        
+        div(style = "padding: 6px 0; border-bottom: 1px solid #4E4F53;",
+            div(class = "match-row", style = "border-bottom: none; padding: 0; align-items: center;",
+                span(row$Team1_Abrev_real, style = "width: 40px; text-align: left; font-weight: bold;"),
+                span(
+                  span(class="actual-score", goals1_real_txt),
+                  span(class="pred-score", goals1_pred_txt),
+                  " - ",
+                  span(class="pred-score", goals2_pred_txt),
+                  span(class="actual-score", goals2_real_txt)
+                ),
+                span(row$Team2_Abrev_real, style = "width: 40px; text-align: right; font-weight: bold;")
             ),
-            span(row$Team2_Abrev_real, style = "width: 35px; text-align: right;")
+            if (kickoff_info != "" || venue_info != "") {
+              div(style = "display: flex; justify-content: space-between; font-size: 10px; color: #A0A0A0; margin-top: 2px;",
+                  span(kickoff_info),
+                  span(venue_info, title = if(!is.null(row$venue_name_real) && !is.na(row$venue_name_real)) row$venue_name_real else "", style = "text-decoration: underline dotted; cursor: help;")
+              )
+            } else {
+              NULL
+            }
         )
       })
       
@@ -1003,6 +1482,15 @@ server <- function(input, output, session) {
           Team2_Abrev_real = Team2_Abrev,
           city_id_real = city_id,
           MatchDay_Label_real = MatchDay_Label
+        ) %>%
+        mutate(
+          Goals1_real = Goals1,
+          Goals2_real = Goals2,
+          Goals1_pred = NA_real_,
+          Goals2_pred = NA_real_,
+          Kickoff_Local_real = Kickoff_Local,
+          Kickoff_TZ_real = Kickoff_TZ,
+          Group_real = Group
         )
     } else {
       joined <- rv$real_data %>% 
@@ -1015,12 +1503,94 @@ server <- function(input, output, session) {
       mutate(
         popup_text = {
           city_matches <- joined %>% filter(city_id_real == id)
-          if(nrow(city_matches) > 0) {
-            match_list <- paste0(as.character(city_matches$MatchDay_Label_real), ": ", city_matches$Team1_Abrev_real, " vs ", city_matches$Team2_Abrev_real, collapse = "<br>")
-            paste0("<b>", city_name, "</b><br>", match_list)
+          
+          # Header HTML
+          header_html <- paste0(
+            "<div class='city-popup-header'>",
+            "  <div class='city-popup-title'>",
+            "    <span>", city_name, "</span>",
+            "    <span class='city-popup-country'>", country, " (", airport_code, ")</span>",
+            "  </div>",
+            "  <div class='city-popup-venue'>",
+            "    <span class='city-popup-venue-icon'>🏟️</span>", venue_name,
+            "  </div>",
+            "</div>"
+          )
+          
+          # Matches HTML
+          if (nrow(city_matches) > 0) {
+            match_rows <- sapply(seq_len(nrow(city_matches)), function(i) {
+              m <- city_matches[i, ]
+              
+              stage_lbl <- if (!is.null(m$Group_real)) as.character(m$Group_real) else as.character(m$Group)
+              if (length(stage_lbl) == 0 || is.na(stage_lbl) || stage_lbl == "") {
+                stage_lbl <- as.character(m$MatchDay_Label_real)
+              }
+              
+              stage_lbl <- str_replace(stage_lbl, "Stage", "")
+              stage_lbl <- str_replace(stage_lbl, "Groups first match", "Group")
+              stage_lbl <- str_replace(stage_lbl, "Groups second match", "Group")
+              stage_lbl <- str_replace(stage_lbl, "Groups third match", "Group")
+              
+              score_html <- ""
+              if (!is.na(m$Goals1_real) && !is.na(m$Goals2_real)) {
+                score_html <- paste0(
+                  "<span class='city-popup-match-score city-popup-score-real'>",
+                  m$Goals1_real, " - ", m$Goals2_real,
+                  "</span>"
+                )
+              } else if (!is.na(m$Goals1_pred) && !is.na(m$Goals2_pred)) {
+                score_html <- paste0(
+                  "<span class='city-popup-match-score city-popup-score-pred' title='Predicted Score'>",
+                  "P: ", m$Goals1_pred, " - ", m$Goals2_pred,
+                  "</span>"
+                )
+              } else {
+                score_html <- "<span class='city-popup-match-score city-popup-score-tbd'>TBD</span>"
+              }
+              
+              kickoff_str <- ""
+              if (!is.null(m$Kickoff_Local_real) && !is.na(m$Kickoff_Local_real) && m$Kickoff_Local_real != "") {
+                dt <- tryCatch({
+                  as.POSIXct(m$Kickoff_Local_real, format = "%Y-%m-%d %H:%M:%S")
+                }, error = function(e) NA)
+                
+                formatted_dt <- if (!is.na(dt)) {
+                  format(dt, "%b %d, %H:%M")
+                } else {
+                  m$Kickoff_Local_real
+                }
+                
+                tz <- if (!is.null(m$Kickoff_TZ_real) && !is.na(m$Kickoff_TZ_real)) paste0(" (", m$Kickoff_TZ_real, ")") else ""
+                kickoff_str <- paste0("<span class='city-popup-match-time'>📅 ", formatted_dt, tz, "</span>")
+              }
+              
+              paste0(
+                "<div class='city-popup-match-row'>",
+                "  <span class='city-popup-match-stage'>", stage_lbl, "</span>",
+                "  <div class='city-popup-match-teams'>",
+                "    <span>", m$Team1_Abrev_real, " vs ", m$Team2_Abrev_real, "</span>",
+                "    ", kickoff_str,
+                "  </div>",
+                "  ", score_html,
+                "</div>"
+              )
+            })
+            
+            matches_html <- paste0(
+              "<div class='city-popup-matches-title'>Matches</div>",
+              paste(match_rows, collapse = "")
+            )
           } else {
-            paste0("<b>", city_name, "</b><br>No matches")
+            matches_html <- "<div class='city-popup-no-matches'>No matches scheduled</div>"
           }
+          
+          paste0(
+            "<div style='min-width: 220px;'>",
+            header_html,
+            matches_html,
+            "</div>"
+          )
         }
       )
     
@@ -1050,10 +1620,16 @@ server <- function(input, output, session) {
   })
   
   output$editor_table <- renderDT({
-    d <- editor_data() %>%
-      select(MatchID, MatchDay_Label, Group, Team1, Goals1, Goals2, Team2)
+    # Re-render only when the selected dataset changes, not when cell values are edited in place
+    input$editor_dataset
+    
+    d <- isolate({
+      editor_data() %>%
+        mutate(Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")"))) %>%
+        select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2)
+    })
     datatable(d, 
-              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 7))),
+              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 6))),
               options = list(paging = FALSE, scrollX = TRUE, scrollY = "600px", dom = 't'),
               rownames = FALSE,
               style = "bootstrap"
@@ -1067,7 +1643,8 @@ server <- function(input, output, session) {
     j <- info$col + 1 # JS is 0-indexed, R is 1-indexed
     v <- info$value
     
-    d <- editor_data()
+    d <- isolate(editor_data())
+    # Columns in d_display: MatchID (1), Kickoff (2), Group (3), Team1 (4), Goals1 (5), Goals2 (6), Team2 (7)
     if (j == 5) {
       d$Goals1[i] <- as.numeric(v)
     } else if (j == 6) {
@@ -1079,6 +1656,13 @@ server <- function(input, output, session) {
     } else {
       rv$ml_preds <- d
     }
+    
+    # Update DT in-place using a proxy to maintain scroll position and selection state
+    proxy <- dataTableProxy("editor_table")
+    d_display <- d %>%
+      mutate(Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")"))) %>%
+      select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2)
+    replaceData(proxy, d_display, resetPaging = FALSE, rownames = FALSE)
   })
   
   observeEvent(input$save_editor, {
@@ -1089,6 +1673,106 @@ server <- function(input, output, session) {
       save_predictions(rv$ml_preds, "predictions/prediccion_ml.csv")
       showNotification("ML Predictions saved to file!", type = "message")
     }
+  })
+  
+  output$calendar_ui <- renderUI({
+    d_real <- rv$real_data
+    preds <- current_preds()
+    if(!is.null(preds)) {
+      p_subset <- preds %>% select(Team1, Team2, Goals1_pred = Goals1, Goals2_pred = Goals2)
+      d <- d_real %>% left_join(p_subset, by = c("Team1", "Team2")) %>%
+           rename(Goals1_real = Goals1, Goals2_real = Goals2)
+    } else {
+      d <- d_real %>% mutate(Goals1_real = Goals1, Goals2_real = Goals2, Goals1_pred = NA, Goals2_pred = NA)
+    }
+    
+    # Extract date from kickoff_at safely
+    d$MatchDate <- as.Date(substring(d$kickoff_at, 1, 10))
+    
+    # 7 weeks: June 1 (Mon) to July 19 (Sun)
+    all_dates <- seq(as.Date("2026-06-01"), as.Date("2026-07-19"), by="day")
+    
+    daily_stages <- sapply(all_dates, function(dt) {
+      m_today <- d %>% filter(MatchDate == dt)
+      if (nrow(m_today) > 0) max(m_today$stage_id, na.rm=TRUE) else 0
+    })
+    
+    active_stage_per_day <- numeric(length(daily_stages))
+    current_stage <- 1
+    for (i in seq_along(daily_stages)) {
+      if (daily_stages[i] > current_stage) {
+        current_stage <- daily_stages[i]
+      }
+      active_stage_per_day[i] <- current_stage
+    }
+    
+    day_divs <- lapply(seq_along(all_dates), function(idx) {
+      dt <- all_dates[idx]
+      matches_today <- d %>% filter(MatchDate == dt) %>% arrange(kickoff_at)
+      
+      if (nrow(matches_today) > 0) {
+        match_divs <- lapply(seq_len(nrow(matches_today)), function(i) {
+          m <- matches_today[i, ]
+          
+          is_assigned <- (m$Team1 %in% unname(english_to_spanish)) || (m$Team2 %in% unname(english_to_spanish))
+          
+          if (is_assigned) {
+            teams_str <- paste(m$Team1_Abrev, "-", m$Team2_Abrev)
+          } else {
+            teams_str <- as.character(m$MatchDay_Label)
+          }
+          
+          has_real <- !is.na(m$Goals1_real) && !is.na(m$Goals2_real)
+          if(has_real) {
+            score_str <- paste(m$Goals1_real, "-", m$Goals2_real)
+            div(class="calendar-match real-result",
+                div(class="match-teams", teams_str),
+                div(class="match-score", score_str)
+            )
+          } else {
+            has_pred <- !is.na(m$Goals1_pred) && !is.na(m$Goals2_pred)
+            if(has_pred) {
+              score_str <- paste("P:", m$Goals1_pred, "-", m$Goals2_pred)
+            } else {
+              score_str <- "TBD"
+            }
+            div(class="calendar-match",
+                div(class="match-teams", teams_str),
+                div(class="match-score", score_str)
+            )
+          }
+        })
+      } else {
+        match_divs <- list()
+      }
+      
+      month_label <- if (as.numeric(format(dt, "%d")) == 1 || dt == as.Date("2026-06-01")) {
+        div(class="calendar-month-label", format(dt, "%b"))
+      } else NULL
+      
+      max_stage <- active_stage_per_day[idx]
+      bg_col <- ""
+      if (max_stage == 2) bg_col <- "background-color: #121c2e; "
+      else if (max_stage == 3) bg_col <- "background-color: #142742; "
+      else if (max_stage == 4) bg_col <- "background-color: #153357; "
+      else if (max_stage == 5 || max_stage == 6) bg_col <- "background-color: #16406b; "
+      else if (max_stage == 7) bg_col <- "background-color: #174e80; "
+      
+      div(class="calendar-day", style=bg_col,
+          month_label,
+          div(class="calendar-date", as.numeric(format(dt, "%d"))),
+          do.call(tagList, match_divs)
+      )
+    })
+    
+    div(class="calendar-wrapper",
+        div(class="calendar-header",
+            div("Mon"), div("Tue"), div("Wed"), div("Thu"), div("Fri"), div("Sat"), div("Sun")
+        ),
+        div(class="calendar-grid",
+            do.call(tagList, day_divs)
+        )
+    )
   })
 }
 
