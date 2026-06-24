@@ -16,5 +16,13 @@ predictions/*
 # Allow app.R
 !app.R
 
+# Allow R directory and files
+!R/
+!R/*.R
+
+# Allow www directory and files
+!www/
+!www/*.css
+
 # Allow .gitignore
 !.gitignore

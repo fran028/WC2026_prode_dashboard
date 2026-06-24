@@ -3,95 +3,95 @@
 Equipo;Resultado;;Equipo
 México;2;0;Sudáfrica
 Corea del Sur;2;1;República Checa
-República Checa;NA;NA;Sudáfrica
-México;NA;NA;Corea del Sur
+República Checa;1;1;Sudáfrica
+México;1;0;Corea del Sur
 República Checa;NA;NA;México
 Sudáfrica;NA;NA;Corea del Sur
 ;;;
 Equipo;Resultado;;Equipo
 Canadá;1;1;Bosnia y Herzegovina
 Catar;1;1;Suiza
-Suiza;NA;NA;Bosnia y Herzegovina
-Canadá;NA;NA;Catar
+Suiza;4;1;Bosnia y Herzegovina
+Canadá;6;0;Catar
 Suiza;NA;NA;Canadá
 Bosnia y Herzegovina;NA;NA;Catar
 ;;;
 Equipo;Resultado;;Equipo
 Brasil;1;1;Marruecos
 Haití;0;1;Escocia
-Escocia;NA;NA;Marruecos
-Brasil;NA;NA;Haití
+Escocia;0;1;Marruecos
+Brasil;3;0;Haití
 Escocia;NA;NA;Brasil
 Marruecos;NA;NA;Haití
 ;;;
 Equipo;Resultado;;Equipo
 Estados Unidos;4;1;Paraguay
 Australia;2;0;Turquía
-Estados Unidos;NA;NA;Australia
-Turquía;NA;NA;Paraguay
+Estados Unidos;2;0;Australia
+Turquía;0;1;Paraguay
 Turquía;NA;NA;Estados Unidos
 Paraguay;NA;NA;Australia
 ;;;
 Equipo;Resultado;;Equipo
 Alemania;7;1;Curazao
 Costa de Marfil;1;0;Ecuador
-Alemania;NA;NA;Costa de Marfil
-Ecuador;NA;NA;Curazao
+Alemania;2;1;Costa de Marfil
+Ecuador;0;0;Curazao
 Curazao;NA;NA;Costa de Marfil
 Ecuador;NA;NA;Alemania
 ;;;
 Equipo;Resultado;;Equipo
 Países Bajos;2;2;Japón
 Suecia;5;1;Túnez
-Países Bajos;NA;NA;Suecia
-Túnez;NA;NA;Japón
+Países Bajos;5;1;Suecia
+Túnez;0;4;Japón
 Japón;NA;NA;Suecia
 Túnez;NA;NA;Países Bajos
 ;;;
 Equipo;Resultado;;Equipo
 Bélgica;1;1;Egipto
 Irán;2;2;Nueva Zelanda
-Bélgica;NA;NA;Irán
-Nueva Zelanda;NA;NA;Egipto
+Bélgica;0;0;Irán
+Nueva Zelanda;1;3;Egipto
 Egipto;NA;NA;Irán
 Nueva Zelanda;NA;NA;Bélgica
 ;;;
 Equipo;Resultado;;Equipo
 España;0;0;Cabo Verde
 Arabia Saudita;1;1;Uruguay
-España;NA;NA;Arabia Saudita
-Uruguay;NA;NA;Cabo Verde
+España;4;0;Arabia Saudita
+Uruguay;2;2;Cabo Verde
 Cabo Verde;NA;NA;Arabia Saudita
 Uruguay;NA;NA;España
 ;;;
 Equipo;Resultado;;Equipo
 Francia;3;1;Senegal
 Irak;1;4;Noruega
-Francia;NA;NA;Irak
-Noruega;NA;NA;Senegal
+Francia;3;0;Irak
+Noruega;3;2;Senegal
 Noruega;NA;NA;Francia
 Senegal;NA;NA;Irak
 ;;;
 Equipo;Resultado;;Equipo
 Argentina;3;0;Argelia
 Austria;3;1;Jordania
-Argentina;NA;NA;Austria
-Jordania;NA;NA;Argelia
+Argentina;2;0;Austria
+Jordania;1;2;Argelia
 Argelia;NA;NA;Austria
 Jordania;NA;NA;Argentina
 ;;;
 Equipo;Resultado;;Equipo
-Portugal;NA;NA;República Democrática del Congo
-Uzbekistán;NA;NA;Colombia
-Portugal;NA;NA;Uzbekistán
+Portugal;1;1;República Democrática del Congo
+Uzbekistán;1;3;Colombia
+Portugal;5;0;Uzbekistán
 Colombia;NA;NA;República Democrática del Congo
 Colombia;NA;NA;Portugal
 República Democrática del Congo;NA;NA;Uzbekistán
 ;;;
 Equipo;Resultado;;Equipo
-Inglaterra;NA;NA;Croacia
-Ghana;NA;NA;Panamá
-Inglaterra;NA;NA;Ghana
+Inglaterra;4;2;Croacia
+Ghana;1;0;Panamá
+Inglaterra;0;0;Ghana
 Panamá;NA;NA;Croacia
 Panamá;NA;NA;Inglaterra
 Croacia;NA;NA;Ghana

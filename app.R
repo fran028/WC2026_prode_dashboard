@@ -678,12 +678,24 @@ server <- function(input, output, session) {
     
     d <- isolate({
       editor_data() %>%
-        mutate(Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")"))) %>%
-        select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2)
+        mutate(
+          Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")")),
+          Kickoff_UTC = if_else(is.na(Kickoff_UTC), "", Kickoff_UTC)
+        ) %>%
+        select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2, Kickoff_UTC)
     })
     datatable(d, 
-              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 6))),
-              options = list(paging = FALSE, scrollX = TRUE, scrollY = "600px", dom = 't'),
+              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 6, 7))),
+              options = list(
+                paging = FALSE, 
+                scrollX = TRUE, 
+                scrollY = "600px", 
+                dom = 't',
+                columnDefs = list(
+                  list(visible = FALSE, targets = 7),
+                  list(orderData = 7, targets = 1)
+                )
+              ),
               rownames = FALSE,
               style = "bootstrap"
     ) %>%
@@ -697,7 +709,7 @@ server <- function(input, output, session) {
     v <- info$value
     
     d <- isolate(editor_data())
-    # Columns in d_display: MatchID (1), Kickoff (2), Group (3), Team1 (4), Goals1 (5), Goals2 (6), Team2 (7)
+    # Columns in d_display: MatchID (1), Kickoff (2), Group (3), Team1 (4), Goals1 (5), Goals2 (6), Team2 (7), Kickoff_UTC (8)
     if (j == 5) {
       d$Goals1[i] <- as.numeric(v)
     } else if (j == 6) {
@@ -713,8 +725,11 @@ server <- function(input, output, session) {
     # Update DT in-place using a proxy to maintain scroll position and selection state
     proxy <- dataTableProxy("editor_table")
     d_display <- d %>%
-      mutate(Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")"))) %>%
-      select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2)
+      mutate(
+        Kickoff = if_else(is.na(Kickoff_Local) | Kickoff_Local == "", "", paste0(Kickoff_Local, " (", Kickoff_TZ, ")")),
+        Kickoff_UTC = if_else(is.na(Kickoff_UTC), "", Kickoff_UTC)
+      ) %>%
+      select(MatchID, Kickoff, Group, Team1, Goals1, Goals2, Team2, Kickoff_UTC)
     replaceData(proxy, d_display, resetPaging = FALSE, rownames = FALSE)
   })
   
