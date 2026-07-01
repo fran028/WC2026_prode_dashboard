@@ -723,6 +723,7 @@ server <- function(input, output, session) {
     } else {
       showNotification("No new matches to sync.", type = "warning", duration = 3)
     }
+    rv$real_penalties <- parse_penalties("predictions/penalties_reales.csv")
   })
     editor_data <- reactive({
       if(input$editor_dataset == "Actual Results") {

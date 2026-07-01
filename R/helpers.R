@@ -281,20 +281,49 @@ get_radar_data <- function(team, real, pred) {
   )
 }
 
-generate_bracket_ui <- function(matches_df) {
+generate_bracket_ui <- function(matches_df, penalties_df) {
   
-  make_col <- function(s_name, match_ids, side_class, is_first_or_last = FALSE) {
-    col_matches <- matches_df %>% filter(id %in% match_ids) %>% arrange(id)
+  format_match <- function(m_id) {
+    row <- matches_df[matches_df$MatchID == m_id, ]
+    if (nrow(row) == 0) return(div(class="bracket-match", "TBD"))
     
-    matchups <- lapply(seq(1, nrow(col_matches), by=2), function(i) {
-      if(i == nrow(col_matches)) { 
+    t1 <- if(is.na(row$Team1)) "TBD" else row$Team1
+    t2 <- if(is.na(row$Team2)) "TBD" else row$Team2
+    g1 <- row$Goals1
+    g2 <- row$Goals2
+    
+    pen <- NULL
+    if(!is.null(penalties_df)) {
+      pen <- penalties_df[penalties_df$MatchID == m_id, ]
+    }
+    
+    score_text <- " - "
+    if (!is.na(g1) && !is.na(g2)) {
+      score_text <- paste0(" ", g1, " - ", g2, " ")
+      if (!is.null(pen) && nrow(pen) > 0 && !is.na(pen$Pen1) && !is.na(pen$Pen2)) {
+        score_text <- paste0(score_text, "(", pen$Pen1, "-", pen$Pen2, " p) ")
+      }
+    } else {
+      score_text <- " vs "
+    }
+    
+    div(class="bracket-match", style="display: flex; justify-content: space-between; padding: 5px 10px;",
+        span(t1, style="flex: 1; text-align: right;"),
+        span(score_text, style="font-weight: bold; padding: 0 10px; color: #D9C5B2;"),
+        span(t2, style="flex: 1; text-align: left;")
+    )
+  }
+
+  make_col <- function(s_name, match_ids, side_class, is_first_or_last = FALSE) {
+    matchups <- lapply(seq(1, length(match_ids), by=2), function(i) {
+      if(i == length(match_ids)) { 
         div(class="bracket-matchup",
-            div(class="bracket-match", col_matches$match_label[i])
+            format_match(match_ids[i])
         )
       } else {
         div(class="bracket-matchup",
-            div(class="bracket-match", col_matches$match_label[i]),
-            div(class="bracket-match", col_matches$match_label[i+1])
+            format_match(match_ids[i]),
+            format_match(match_ids[i+1])
         )
       }
     })
@@ -318,10 +347,10 @@ generate_bracket_ui <- function(matches_df) {
   center_col <- div(class="bracket-col bracket-col-center",
       div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 12px;", "Finals"),
       div(class="bracket-matchup",
-          div(class="bracket-match final-match", matches_df$match_label[matches_df$id == 104]),
-          div(class="third-place-wrapper", style="width: 100%; display: flex; flex-direction: column; align-items: center;",
+          format_match(104),
+          div(class="third-place-wrapper", style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 15px;",
               div(style="text-align: center; color: #7E7F83; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;", "Third Place"),
-              div(class="bracket-match third-place-match", style="border-color: #555; color: #888; width: 100%;", matches_df$match_label[matches_df$id == 103])
+              div(style="border-color: #555; color: #888; width: 100%;", format_match(103))
           )
       )
   )
@@ -426,6 +455,41 @@ update_results_from_api <- function(current_data, filepath) {
         if (is.na(spa)) return(x)
         return(spa)
       })
+      
+      if ("score" %in% names(api_matches) && "p" %in% names(api_matches$score)) {
+        p_scores <- api_matches$score$p
+        pen_df <- data.frame(MatchID = integer(), Pen1 = integer(), Pen2 = integer())
+        
+        for (i in seq_len(nrow(api_matches))) {
+          if(is.list(p_scores)) {
+             x <- p_scores[[i]]
+          } else if (is.matrix(p_scores) || is.data.frame(p_scores)) {
+             x <- p_scores[i, ]
+          } else {
+             x <- NULL
+          }
+          if (!is.null(x) && length(x) >= 2 && !is.na(x[1]) && !is.na(x[2])) {
+            pen_df <- rbind(pen_df, data.frame(MatchID = api_matches$MatchID[i], Pen1 = as.numeric(x[1]), Pen2 = as.numeric(x[2])))
+          }
+        }
+        if (nrow(pen_df) > 0) {
+          existing_pens <- if(file.exists("predictions/penalties_reales.csv")) read.csv("predictions/penalties_reales.csv", sep=";") else data.frame(MatchID=integer(), Pen1=integer(), Pen2=integer())
+          
+          for (i in seq_len(nrow(pen_df))) {
+             idx <- which(existing_pens$MatchID == pen_df$MatchID[i])
+             if (length(idx) > 0) {
+                existing_pens$Pen1[idx] <- pen_df$Pen1[i]
+                existing_pens$Pen2[idx] <- pen_df$Pen2[i]
+             } else {
+                new_row <- pen_df[i, , drop=FALSE]
+                if ("Team1" %in% names(existing_pens)) new_row$Team1 <- NA
+                if ("Team2" %in% names(existing_pens)) new_row$Team2 <- NA
+                existing_pens <- rbind(existing_pens, new_row)
+             }
+          }
+          write.table(existing_pens, "predictions/penalties_reales.csv", sep=";", row.names=FALSE, quote=FALSE)
+        }
+      }
       
       updated_data <- current_data %>%
         left_join(api_matches %>% select(MatchID, API_Goals1, API_Goals2, API_Team1, API_Team2), by = "MatchID") %>%
