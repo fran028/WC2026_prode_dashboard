@@ -1,4 +1,4 @@
-﻿;;;
+;;;
 ;Machine_Learning;;
 Equipo;Resultado;;Equipo
 México;2;1;Sudáfrica
@@ -95,3 +95,47 @@ Inglaterra;2;0;Ghana
 Panamá;1;1;Croacia
 Panamá;0;3;Inglaterra
 Croacia;1;1;Ghana
+;;;
+Equipo;Resultado;;Equipo
+Sudáfrica;NA;NA;Canadá
+Brasil;NA;NA;Japón
+Alemania;NA;NA;Paraguay
+Países Bajos;NA;NA;Marruecos
+Costa de Marfil;NA;NA;Noruega
+Francia;NA;NA;Suecia
+México;NA;NA;Ecuador
+Inglaterra;NA;NA;República Democrática del Congo
+Bélgica;NA;NA;Senegal
+Estados Unidos;NA;NA;Bosnia y Herzegovina
+España;NA;NA;Austria
+Portugal;NA;NA;Croacia
+Suiza;NA;NA;Argelia
+Australia;NA;NA;Egipto
+Argentina;NA;NA;Cabo Verde
+Colombia;NA;NA;Ghana
+;;;
+Equipo;Resultado;;Equipo
+Canadá;NA;NA;Marruecos
+Paraguay;NA;NA;Francia
+Brasil;NA;NA;Noruega
+México;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+;;;
+Equipo;Resultado;;Equipo
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+;;;
+Equipo;Resultado;;Equipo
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+;;;
+Equipo;Resultado;;Equipo
+TBD;NA;NA;TBD
+;;;
+Equipo;Resultado;;Equipo
+TBD;NA;NA;TBD

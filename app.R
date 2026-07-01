@@ -133,11 +133,16 @@ server <- function(input, output, session) {
     ml_penalties = parse_penalties("predictions/penalties_ml.csv")
   )
   
+  # Sync knockout team names from real data to ML predictions
+  rv$ml_preds$Team1[rv$ml_preds$MatchID > 72] <- rv$real_data$Team1[rv$real_data$MatchID > 72]
+  rv$ml_preds$Team2[rv$ml_preds$MatchID > 72] <- rv$real_data$Team2[rv$real_data$MatchID > 72]
+  
+  
   standings <- reactive({ calculate_standings(rv$real_data) })
   ml_standings <- reactive({ calculate_standings(rv$ml_preds) })
   
-  final_real_data <- reactive({ compute_knockout_teams(rv$real_data, standings(), rv$real_penalties) })
-  final_ml_preds <- reactive({ compute_knockout_teams(rv$ml_preds, ml_standings(), rv$ml_penalties) })
+  final_real_data <- reactive({ rv$real_data })
+  final_ml_preds <- reactive({ rv$ml_preds })
   
   top_scorer <- reactive({ standings() %>% filter(GF == max(GF)) %>% pull(Team) })
   least_conceded <- reactive({ standings() %>% filter(GA == min(GA)) %>% pull(Team) })
@@ -709,6 +714,10 @@ server <- function(input, output, session) {
     
     if (new_played > old_played) {
       rv$real_data <- updated_data
+      # Also update ML predictions team names!
+      rv$ml_preds$Team1[rv$ml_preds$MatchID > 72] <- updated_data$Team1[updated_data$MatchID > 72]
+      rv$ml_preds$Team2[rv$ml_preds$MatchID > 72] <- updated_data$Team2[updated_data$MatchID > 72]
+      save_predictions(rv$ml_preds, "predictions/prediccion_ml.csv")
       showNotification(sprintf("Successfully imported %d new match results!", new_played - old_played), type = "message", duration = 5)
     } else {
       showNotification("No new matches to sync.", type = "warning", duration = 3)
