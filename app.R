@@ -29,8 +29,11 @@ ui <- page_sidebar(
       style = "font-size: 13px; color: #D9C5B2; line-height: 1.45; margin-bottom: 20px; text-align: center; opacity: 0.85;"),
     hr(style = "border-top: 1px solid #7E7F83;"),
     h5("Prediction Compare", style = "color: #D9C5B2; font-weight: bold; margin-bottom: 15px;"),
-    p("Upload a prediction CSV to compare against the real results.", style = "font-size: 13px; color: #A0A0A0;"),
-    fileInput("user_prediction", "Load Prediction (.csv):", accept = c(".csv"), buttonLabel = "Browse...")
+    selectInput("pred_file_selector", "Select Prediction File:", choices = NULL),
+    hr(style = "border-top: 1px dashed #7E7F83; margin: 10px 0;"),
+    p("Upload a new prediction CSV or download the template.", style = "font-size: 13px; color: #A0A0A0;"),
+    fileInput("user_prediction", "Upload Prediction:", accept = c(".csv"), buttonLabel = "Browse..."),
+    downloadButton("download_template", "Download Template", class = "btn btn-outline-light", style = "width: 100%; margin-bottom: 10px;")
   ),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "style.css")
@@ -90,6 +93,11 @@ ui <- page_sidebar(
         uiOutput("calendar_ui")
     ),
     nav_panel("Knockout Bracket",
+        div(style = "padding: 15px; text-align: center;",
+            radioButtons("bracket_dataset", "Select Dataset:", 
+                         choices = c("Actual Results", "Predictions"), 
+                         inline = TRUE)
+        ),
         uiOutput("bracket_ui")
     ),
     nav_panel("Data Editor",
@@ -138,6 +146,70 @@ server <- function(input, output, session) {
     real_penalties = parse_penalties("predictions/penalties_reales.csv"),
     ml_penalties = parse_penalties("predictions/penalties_ml.csv")
   )
+  
+  # --- Prediction Manager ---
+  pred_files_trigger <- reactiveVal(0)
+  
+  observe({
+    pred_files_trigger()
+    files <- list.files("predictions", pattern = "\\.csv$")
+    files <- files[!files %in% c("resultados_reales.csv", "penalties_reales.csv")]
+    
+    current_sel <- isolate(input$pred_file_selector)
+    if (is.null(current_sel) || !(current_sel %in% files)) {
+      if ("prediccion_ml.csv" %in% files) {
+        current_sel <- "prediccion_ml.csv"
+      } else if (length(files) > 0) {
+        current_sel <- files[1]
+      }
+    }
+    
+    updateSelectInput(session, "pred_file_selector", choices = files, selected = current_sel)
+  })
+  
+  observeEvent(input$user_prediction, {
+    req(input$user_prediction)
+    file_name <- input$user_prediction$name
+    safe_name <- gsub("[^a-zA-Z0-9_.-]", "_", file_name)
+    target_path <- file.path("predictions", safe_name)
+    
+    file.copy(input$user_prediction$datapath, target_path, overwrite = TRUE)
+    showNotification(paste("Uploaded", safe_name), type = "message")
+    
+    updateSelectInput(session, "pred_file_selector", selected = safe_name)
+    pred_files_trigger(pred_files_trigger() + 1)
+  })
+  
+  observeEvent(input$pred_file_selector, {
+    req(input$pred_file_selector)
+    target_path <- file.path("predictions", input$pred_file_selector)
+    if (file.exists(target_path)) {
+      new_preds <- parse_predictions(target_path)
+      rd <- isolate(final_real_data())
+      new_preds$Team1[new_preds$MatchID > 72] <- rd$Team1[rd$MatchID > 72]
+      new_preds$Team2[new_preds$MatchID > 72] <- rd$Team2[rd$MatchID > 72]
+      rv$ml_preds <- new_preds
+    }
+  })
+  
+  output$download_template <- downloadHandler(
+    filename = function() { "template_predicciones.csv" },
+    content = function(file) {
+      lines <- readLines("predictions/prediccion_ml.csv", encoding = "UTF-8")
+      for (i in 1:length(lines)) {
+        if (!str_detect(lines[i], "^;+$") && !str_detect(lines[i], "^;.*") && !str_detect(lines[i], "^Equipo;Resultado;;Equipo") && lines[i] != "") {
+          parts <- strsplit(lines[i], ";", fixed = TRUE)[[1]]
+          if (length(parts) >= 4) {
+             parts[2] <- ""
+             parts[3] <- ""
+             lines[i] <- paste(parts, collapse = ";")
+          }
+        }
+      }
+      writeLines(lines, file, useBytes = TRUE)
+    }
+  )
+  # --------------------------
   
   standings <- reactive({ calculate_standings(rv$real_data) })
   ml_standings <- reactive({ calculate_standings(rv$ml_preds) })
@@ -296,11 +368,7 @@ server <- function(input, output, session) {
   })
   
   current_preds <- reactive({
-    if (is.null(input$user_prediction)) {
-      rv$ml_preds
-    } else {
-      parse_predictions(input$user_prediction$datapath)
-    }
+    rv$ml_preds
   })
   
   observeEvent(input$theme_toggle, {
@@ -682,7 +750,12 @@ server <- function(input, output, session) {
   })
   
   output$bracket_ui <- renderUI({
-    generate_bracket_ui(matches)
+    req(input$bracket_dataset)
+    if(input$bracket_dataset == "Actual Results") {
+      generate_bracket_ui(final_real_data(), rv$real_penalties)
+    } else {
+      generate_bracket_ui(final_ml_preds(), rv$ml_penalties)
+    }
   })
   
   # --- Data Editor Logic ---
@@ -871,7 +944,7 @@ server <- function(input, output, session) {
     d_real <- final_real_data()
     preds <- current_preds()
     if(!is.null(preds)) {
-      p_subset <- preds %>% select(MatchID, Team1, Team2, Goals1_pred = Goals1, Goals2_pred = Goals2)
+      p_subset <- preds %>% select(MatchID, Goals1_pred = Goals1, Goals2_pred = Goals2)
       d <- d_real %>% left_join(p_subset, by = "MatchID") %>%
            rename(Goals1_real = Goals1, Goals2_real = Goals2)
     } else {

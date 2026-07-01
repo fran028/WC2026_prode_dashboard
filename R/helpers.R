@@ -287,8 +287,8 @@ generate_bracket_ui <- function(matches_df, penalties_df) {
     row <- matches_df[matches_df$MatchID == m_id, ]
     if (nrow(row) == 0) return(div(class="bracket-match", "TBD"))
     
-    t1 <- if(is.na(row$Team1)) "TBD" else row$Team1
-    t2 <- if(is.na(row$Team2)) "TBD" else row$Team2
+    t1 <- if(is.na(row$Team1_Abrev)) "TBD" else row$Team1_Abrev
+    t2 <- if(is.na(row$Team2_Abrev)) "TBD" else row$Team2_Abrev
     g1 <- row$Goals1
     g2 <- row$Goals2
     
@@ -297,19 +297,22 @@ generate_bracket_ui <- function(matches_df, penalties_df) {
       pen <- penalties_df[penalties_df$MatchID == m_id, ]
     }
     
-    score_text <- " - "
     if (!is.na(g1) && !is.na(g2)) {
-      score_text <- paste0(" ", g1, " - ", g2, " ")
       if (!is.null(pen) && nrow(pen) > 0 && !is.na(pen$Pen1) && !is.na(pen$Pen2)) {
-        score_text <- paste0(score_text, "(", pen$Pen1, "-", pen$Pen2, " p) ")
+        score_elem <- div(style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; font-weight: bold; color: #D9C5B2; padding: 0 2px;",
+          span(paste0(g1, "-", g2)),
+          span(paste0("(", pen$Pen1, "-", pen$Pen2, " p)"), style="font-size: 9px; font-weight: normal; color: #A0A0A0;")
+        )
+      } else {
+        score_elem <- span(paste0(g1, " - ", g2), style="font-weight: bold; padding: 0 4px; color: #D9C5B2;")
       }
     } else {
-      score_text <- " vs "
+      score_elem <- span("vs", style="font-weight: bold; padding: 0 4px; color: #D9C5B2;")
     }
     
-    div(class="bracket-match", style="display: flex; justify-content: space-between; padding: 5px 10px;",
+    div(class="bracket-match", style="display: flex; justify-content: space-between; align-items: center; padding: 5px 2px;",
         span(t1, style="flex: 1; text-align: right;"),
-        span(score_text, style="font-weight: bold; padding: 0 10px; color: #D9C5B2;"),
+        score_elem,
         span(t2, style="flex: 1; text-align: left;")
     )
   }
@@ -405,19 +408,10 @@ update_results_from_api <- function(current_data, filepath) {
       api_url <- "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
       api_data <- jsonlite::fromJSON(api_url)
       
-      # Static 1-to-1 index map to translate API order to Local ID
-      api_to_local <- c(
-        1:72, # Group Stage
-        73, 75, 76, 74, 78, 77, 79, 80, 82, 81, 84, 83, 85, 87, 88, 86, # Round of 32
-        90, 89, 91, 92, 93, 94, 95, 96, # Round of 16
-        97, 98, 99, 100, # Quarter-finals
-        101, 102, 103, 104 # Semifinals, 3rd, Finals
-      )
-      
       api_matches <- api_data$matches %>% 
         mutate(
           API_Index = row_number(),
-          MatchID = api_to_local[API_Index]
+          MatchID = API_Index
         )
       
       api_matches$API_Goals1 <- NA_real_
@@ -494,8 +488,8 @@ update_results_from_api <- function(current_data, filepath) {
       updated_data <- current_data %>%
         left_join(api_matches %>% select(MatchID, API_Goals1, API_Goals2, API_Team1, API_Team2), by = "MatchID") %>%
         mutate(
-          Goals1 = ifelse(is.na(Goals1) & !is.na(API_Goals1), API_Goals1, Goals1),
-          Goals2 = ifelse(is.na(Goals2) & !is.na(API_Goals2), API_Goals2, Goals2),
+          Goals1 = ifelse(MatchID > 72, API_Goals1, ifelse(is.na(Goals1) & !is.na(API_Goals1), API_Goals1, Goals1)),
+          Goals2 = ifelse(MatchID > 72, API_Goals2, ifelse(is.na(Goals2) & !is.na(API_Goals2), API_Goals2, Goals2)),
           Team1 = ifelse(MatchID > 72 & !is.na(API_Team1) & !str_detect(API_Team1, "^[WL]\\d+$") & !str_detect(API_Team1, "^Round of"), API_Team1, Team1),
           Team2 = ifelse(MatchID > 72 & !is.na(API_Team2) & !str_detect(API_Team2, "^[WL]\\d+$") & !str_detect(API_Team2, "^Round of"), API_Team2, Team2)
         ) %>%
