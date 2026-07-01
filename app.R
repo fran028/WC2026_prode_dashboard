@@ -126,17 +126,18 @@ server <- function(input, output, session) {
   initial_real_data <- parse_predictions("predictions/resultados_reales.csv")
   initial_real_data <- update_results_from_api(initial_real_data, "predictions/resultados_reales.csv")
   
+  initial_ml_preds <- parse_predictions("predictions/prediccion_ml.csv")
+  
+  # Sync knockout team names from real data to ML predictions
+  initial_ml_preds$Team1[initial_ml_preds$MatchID > 72] <- initial_real_data$Team1[initial_real_data$MatchID > 72]
+  initial_ml_preds$Team2[initial_ml_preds$MatchID > 72] <- initial_real_data$Team2[initial_real_data$MatchID > 72]
+  
   rv <- reactiveValues(
     real_data = initial_real_data,
-    ml_preds = parse_predictions("predictions/prediccion_ml.csv"),
+    ml_preds = initial_ml_preds,
     real_penalties = parse_penalties("predictions/penalties_reales.csv"),
     ml_penalties = parse_penalties("predictions/penalties_ml.csv")
   )
-  
-  # Sync knockout team names from real data to ML predictions
-  rv$ml_preds$Team1[rv$ml_preds$MatchID > 72] <- rv$real_data$Team1[rv$real_data$MatchID > 72]
-  rv$ml_preds$Team2[rv$ml_preds$MatchID > 72] <- rv$real_data$Team2[rv$real_data$MatchID > 72]
-  
   
   standings <- reactive({ calculate_standings(rv$real_data) })
   ml_standings <- reactive({ calculate_standings(rv$ml_preds) })
