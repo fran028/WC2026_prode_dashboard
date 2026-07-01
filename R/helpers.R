@@ -339,3 +339,300 @@ generate_bracket_ui <- function(matches_df) {
       do.call(tagList, right_cols)
   )
 }
+
+parse_penalties <- function(filepath) {
+  if (file.exists(filepath)) {
+    read.csv(filepath, sep = ';', stringsAsFactors = FALSE)
+  } else {
+    data.frame(MatchID = integer(), Pen1 = integer(), Pen2 = integer())
+  }
+}
+
+save_penalties <- function(data, filepath) {
+  write.table(data, file = filepath, sep = ';', row.names = FALSE, col.names = TRUE, quote = FALSE)
+}
+compute_knockout_teams <- function(data, standings_df, penalties_df) {
+  # 1. Extract Group stage standings
+  group_teams <- standings_df %>% 
+    mutate(Group_Letter = str_remove(Group, "Group ")) %>%
+    group_by(Group_Letter) %>%
+    arrange(desc(Pts), desc(GD), desc(GF), .by_group = TRUE) %>%
+    mutate(Rank = row_number()) %>%
+    ungroup()
+    
+  # Extract top 2 from each group
+  top2 <- group_teams %>% filter(Rank <= 2)
+  
+  # Extract best 8 third-placed teams
+  best3rd <- group_teams %>% 
+    filter(Rank == 3) %>%
+    arrange(desc(Pts), desc(GD), desc(GF)) %>%
+    head(8)
+    
+  # Map 3rd placed teams to slots via greedy matching
+  slots <- list(
+    "75" = c("A","B","C","D","E","F"), 
+    "78" = c("C","D","F","G","H"), 
+    "79" = c("C","E","F","H","I"),
+    "80" = c("E","H","I","J","K"),
+    "81" = c("A","E","H","I","J"),
+    "82" = c("B","E","F","I","J"),
+    "85" = c("E","F","G","I","J"),
+    "88" = c("D","E","I","J","L")
+  )
+  
+  assigned_3rds <- rep(NA, 8)
+  names(assigned_3rds) <- names(slots)
+  available_teams <- best3rd$Team
+  available_groups <- best3rd$Group_Letter
+  
+  assign_slot <- function(slot_idx) {
+    if (slot_idx > 8) return(TRUE)
+    slot_name <- names(slots)[slot_idx]
+    allowed <- slots[[slot_name]]
+    
+    for (i in seq_along(available_teams)) {
+      if (!is.na(available_groups[i]) && available_groups[i] %in% allowed) {
+        assigned_3rds[slot_name] <<- available_teams[i]
+        
+        temp_team <- available_teams[i]
+        temp_grp <- available_groups[i]
+        available_teams[i] <<- NA
+        available_groups[i] <<- NA
+        
+        if (assign_slot(slot_idx + 1)) return(TRUE)
+        
+        available_teams[i] <<- temp_team
+        available_groups[i] <<- temp_grp
+        assigned_3rds[slot_name] <<- NA
+      }
+    }
+    return(FALSE)
+  }
+  
+  assign_slot(1)
+  
+  get_team <- function(r, g) {
+    t <- group_teams$Team[group_teams$Rank == r & group_teams$Group_Letter == g]
+    if (length(t) == 0) return("TBD") else return(t[1])
+  }
+  
+  for (i in 73:88) {
+    lbl <- data$match_label[data$MatchID == i]
+    if (length(lbl) == 0 || is.na(lbl)) next
+    
+    t1_curr <- data$Team1[data$MatchID == i]
+    t2_curr <- data$Team2[data$MatchID == i]
+    
+    parts <- str_split(lbl, " vs ")[[1]]
+    if (length(parts) == 2) {
+      # If the team name is already a valid country name (not placeholder like "2A"), preserve it
+      if (is.na(t1_curr) || t1_curr == "" || str_detect(t1_curr, "^Round of 32") || t1_curr == "TBD" || str_detect(t1_curr, "^[123][A-L]$")) {
+        if (str_detect(parts[1], "^[12][A-L]$")) {
+          r <- as.numeric(substr(parts[1], 1, 1))
+          g <- substr(parts[1], 2, 2)
+          data$Team1[data$MatchID == i] <- get_team(r, g)
+        }
+      }
+      
+      if (is.na(t2_curr) || t2_curr == "" || str_detect(t2_curr, "^Round of 32") || t2_curr == "TBD" || str_detect(t2_curr, "^[123][A-L]$")) {
+        if (str_detect(parts[2], "^[12][A-L]$")) {
+          r <- as.numeric(substr(parts[2], 1, 1))
+          g <- substr(parts[2], 2, 2)
+          data$Team2[data$MatchID == i] <- get_team(r, g)
+        } else if (str_detect(parts[2], "^3")) {
+          t <- assigned_3rds[as.character(i)]
+          if (!is.na(t)) {
+            data$Team2[data$MatchID == i] <- t
+          } else {
+            data$Team2[data$MatchID == i] <- "TBD"
+          }
+        }
+      }
+    }
+  }
+  
+  get_winner <- function(m_id) {
+    m <- data[data$MatchID == m_id, ]
+    if (nrow(m) == 0) return("TBD")
+    g1 <- m$Goals1
+    g2 <- m$Goals2
+    if (is.na(g1) || is.na(g2)) return("TBD")
+    if (g1 > g2) return(m$Team1)
+    if (g2 > g1) return(m$Team2)
+    if (!is.null(penalties_df)) {
+      pen <- penalties_df[penalties_df$MatchID == m_id, ]
+      if (nrow(pen) > 0 && !is.na(pen$Pen1) && !is.na(pen$Pen2)) {
+        if (pen$Pen1 > pen$Pen2) return(m$Team1)
+        if (pen$Pen2 > pen$Pen1) return(m$Team2)
+      }
+    }
+    return("TBD (Tie)")
+  }
+  
+  get_loser <- function(m_id) {
+    m <- data[data$MatchID == m_id, ]
+    if (nrow(m) == 0) return("TBD")
+    g1 <- m$Goals1
+    g2 <- m$Goals2
+    if (is.na(g1) || is.na(g2)) return("TBD")
+    if (g1 > g2) return(m$Team2)
+    if (g2 > g1) return(m$Team1)
+    if (!is.null(penalties_df)) {
+      pen <- penalties_df[penalties_df$MatchID == m_id, ]
+      if (nrow(pen) > 0 && !is.na(pen$Pen1) && !is.na(pen$Pen2)) {
+        if (pen$Pen1 > pen$Pen2) return(m$Team2)
+        if (pen$Pen2 > pen$Pen1) return(m$Team1)
+      }
+    }
+    return("TBD (Tie)")
+  }
+  
+  for (i in 89:104) {
+    lbl <- data$match_label[data$MatchID == i]
+    if (length(lbl) == 0 || is.na(lbl)) next
+    
+    t1_curr <- data$Team1[data$MatchID == i]
+    t2_curr <- data$Team2[data$MatchID == i]
+    
+    parts <- str_split(lbl, " vs ")[[1]]
+    if (length(parts) == 2) {
+      if (is.na(t1_curr) || t1_curr == "" || str_detect(t1_curr, "^Round of") || str_detect(t1_curr, "^Quarter") || str_detect(t1_curr, "^Semifinal") || t1_curr == "TBD" || str_detect(t1_curr, "^[WL]\\d+$")) {
+        if (str_detect(parts[1], "Round of 32 (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[1], "\\d+"))
+          data$Team1[data$MatchID == i] <- get_winner(72 + m_idx)
+        } else if (str_detect(parts[1], "Round of 16 (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[1], "\\d+"))
+          data$Team1[data$MatchID == i] <- get_winner(88 + m_idx)
+        } else if (str_detect(parts[1], "Quarter final (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[1], "\\d+"))
+          data$Team1[data$MatchID == i] <- get_winner(96 + m_idx)
+        } else if (str_detect(parts[1], "Semifinal (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[1], "\\d+"))
+          data$Team1[data$MatchID == i] <- get_winner(100 + m_idx)
+        } else if (str_detect(parts[1], "Loser Semifinal (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[1], "\\d+"))
+          data$Team1[data$MatchID == i] <- get_loser(100 + m_idx)
+        }
+      }
+      
+      if (is.na(t2_curr) || t2_curr == "" || str_detect(t2_curr, "^Round of") || str_detect(t2_curr, "^Quarter") || str_detect(t2_curr, "^Semifinal") || t2_curr == "TBD" || str_detect(t2_curr, "^[WL]\\d+$")) {
+        if (str_detect(parts[2], "Round of 32 (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[2], "\\d+"))
+          data$Team2[data$MatchID == i] <- get_winner(72 + m_idx)
+        } else if (str_detect(parts[2], "Round of 16 (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[2], "\\d+"))
+          data$Team2[data$MatchID == i] <- get_winner(88 + m_idx)
+        } else if (str_detect(parts[2], "Quarter final (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[2], "\\d+"))
+          data$Team2[data$MatchID == i] <- get_winner(96 + m_idx)
+        } else if (str_detect(parts[2], "Semifinal (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[2], "\\d+"))
+          data$Team2[data$MatchID == i] <- get_winner(100 + m_idx)
+        } else if (str_detect(parts[2], "Loser Semifinal (\\d+)")) {
+          m_idx <- as.numeric(str_extract(parts[2], "\\d+"))
+          data$Team2[data$MatchID == i] <- get_loser(100 + m_idx)
+        }
+      }
+    }
+  }
+  
+  return(data)
+}
+
+update_results_from_api <- function(current_data, filepath) {
+  played_matches <- current_data %>% filter(!is.na(Goals1) & !is.na(Kickoff_UTC) & Kickoff_UTC != "")
+  
+  last_match_date <- as.Date("2020-01-01")
+  if (nrow(played_matches) > 0) {
+    last_match_date <- max(as.Date(played_matches$Kickoff_UTC), na.rm = TRUE)
+  }
+  
+  current_date <- Sys.Date()
+  
+  needs_update <- current_data %>%
+    filter(is.na(Goals1) & !is.na(Kickoff_UTC) & Kickoff_UTC != "" & 
+             as.Date(Kickoff_UTC) > last_match_date & 
+             as.Date(Kickoff_UTC) <= current_date)
+             
+  has_placeholders <- any(current_data$MatchID > 72 & (
+    is.na(current_data$Team1) | current_data$Team1 == "" | str_detect(current_data$Team1, "^Round of") |
+    is.na(current_data$Team2) | current_data$Team2 == "" | str_detect(current_data$Team2, "^Round of")
+  ))
+  
+  if (nrow(needs_update) > 0 || has_placeholders) {
+    tryCatch({
+      api_url <- "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
+      api_data <- jsonlite::fromJSON(api_url)
+      
+      # Static 1-to-1 index map to translate API order to Local ID
+      api_to_local <- c(
+        1:72, # Group Stage
+        73, 75, 76, 74, 78, 77, 79, 80, 82, 81, 84, 83, 85, 87, 88, 86, # Round of 32
+        90, 89, 91, 92, 93, 94, 95, 96, # Round of 16
+        97, 98, 99, 100, # Quarter-finals
+        101, 102, 103, 104 # Semifinals, 3rd, Finals
+      )
+      
+      api_matches <- api_data$matches %>% 
+        mutate(
+          API_Index = row_number(),
+          MatchID = api_to_local[API_Index]
+        )
+      
+      api_matches$API_Goals1 <- NA_real_
+      api_matches$API_Goals2 <- NA_real_
+      
+      if ("score" %in% names(api_matches) && "ft" %in% names(api_matches$score)) {
+        ft_scores <- api_matches$score$ft
+        if (is.matrix(ft_scores) || is.data.frame(ft_scores)) {
+          api_matches$API_Goals1 <- as.numeric(ft_scores[, 1])
+          api_matches$API_Goals2 <- as.numeric(ft_scores[, 2])
+        } else if (is.list(ft_scores)) {
+          api_matches$API_Goals1 <- sapply(ft_scores, function(x) if(length(x)>=1 && !is.null(x[1])) as.numeric(x[1]) else NA_real_)
+          api_matches$API_Goals2 <- sapply(ft_scores, function(x) if(length(x)>=2 && !is.null(x[2])) as.numeric(x[2]) else NA_real_)
+        }
+      }
+      
+      manual_translations <- c(
+        "Ivory Coast" = "Costa de Marfil",
+        "Bosnia & Herzegovina" = "Bosnia y Herzegovina",
+        "DR Congo" = "República Democrática del Congo",
+        "Cape Verde" = "Cabo Verde"
+      )
+      
+      api_matches$API_Team1 <- sapply(api_matches$team1, function(x) {
+        if (is.null(x) || is.na(x) || x == "") return(NA_character_)
+        if (x %in% names(manual_translations)) return(manual_translations[x])
+        spa <- unname(english_to_spanish[x])
+        if (is.na(spa)) return(x)
+        return(spa)
+      })
+      api_matches$API_Team2 <- sapply(api_matches$team2, function(x) {
+        if (is.null(x) || is.na(x) || x == "") return(NA_character_)
+        if (x %in% names(manual_translations)) return(manual_translations[x])
+        spa <- unname(english_to_spanish[x])
+        if (is.na(spa)) return(x)
+        return(spa)
+      })
+      
+      updated_data <- current_data %>%
+        left_join(api_matches %>% select(MatchID, API_Goals1, API_Goals2, API_Team1, API_Team2), by = "MatchID") %>%
+        mutate(
+          Goals1 = ifelse(is.na(Goals1) & !is.na(API_Goals1), API_Goals1, Goals1),
+          Goals2 = ifelse(is.na(Goals2) & !is.na(API_Goals2), API_Goals2, Goals2),
+          Team1 = ifelse(MatchID > 72 & !is.na(API_Team1) & !str_detect(API_Team1, "^[WL]\\d+$") & !str_detect(API_Team1, "^Round of"), API_Team1, Team1),
+          Team2 = ifelse(MatchID > 72 & !is.na(API_Team2) & !str_detect(API_Team2, "^[WL]\\d+$") & !str_detect(API_Team2, "^Round of"), API_Team2, Team2)
+        ) %>%
+        select(-API_Goals1, -API_Goals2, -API_Team1, -API_Team2)
+        
+      if (!identical(updated_data, current_data)) {
+        save_predictions(updated_data, filepath)
+        return(updated_data)
+      }
+    }, error = function(e) {
+      warning("Failed to fetch API data: ", e$message)
+    })
+  }
+  return(current_data)
+}

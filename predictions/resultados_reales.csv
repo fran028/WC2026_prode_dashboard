@@ -5,137 +5,137 @@ México;2;0;Sudáfrica
 Corea del Sur;2;1;República Checa
 República Checa;1;1;Sudáfrica
 México;1;0;Corea del Sur
-República Checa;NA;NA;México
-Sudáfrica;NA;NA;Corea del Sur
+República Checa;0;3;México
+Sudáfrica;1;0;Corea del Sur
 ;;;
 Equipo;Resultado;;Equipo
 Canadá;1;1;Bosnia y Herzegovina
 Catar;1;1;Suiza
 Suiza;4;1;Bosnia y Herzegovina
 Canadá;6;0;Catar
-Suiza;NA;NA;Canadá
-Bosnia y Herzegovina;NA;NA;Catar
+Suiza;2;1;Canadá
+Bosnia y Herzegovina;3;1;Catar
 ;;;
 Equipo;Resultado;;Equipo
 Brasil;1;1;Marruecos
 Haití;0;1;Escocia
 Escocia;0;1;Marruecos
 Brasil;3;0;Haití
-Escocia;NA;NA;Brasil
-Marruecos;NA;NA;Haití
+Escocia;0;3;Brasil
+Marruecos;4;2;Haití
 ;;;
 Equipo;Resultado;;Equipo
 Estados Unidos;4;1;Paraguay
 Australia;2;0;Turquía
 Estados Unidos;2;0;Australia
 Turquía;0;1;Paraguay
-Turquía;NA;NA;Estados Unidos
-Paraguay;NA;NA;Australia
+Turquía;3;2;Estados Unidos
+Paraguay;0;0;Australia
 ;;;
 Equipo;Resultado;;Equipo
 Alemania;7;1;Curazao
 Costa de Marfil;1;0;Ecuador
 Alemania;2;1;Costa de Marfil
 Ecuador;0;0;Curazao
-Curazao;NA;NA;Costa de Marfil
-Ecuador;NA;NA;Alemania
+Curazao;0;2;Costa de Marfil
+Ecuador;2;1;Alemania
 ;;;
 Equipo;Resultado;;Equipo
 Países Bajos;2;2;Japón
 Suecia;5;1;Túnez
 Países Bajos;5;1;Suecia
 Túnez;0;4;Japón
-Japón;NA;NA;Suecia
-Túnez;NA;NA;Países Bajos
+Japón;1;1;Suecia
+Túnez;1;3;Países Bajos
 ;;;
 Equipo;Resultado;;Equipo
 Bélgica;1;1;Egipto
 Irán;2;2;Nueva Zelanda
 Bélgica;0;0;Irán
 Nueva Zelanda;1;3;Egipto
-Egipto;NA;NA;Irán
-Nueva Zelanda;NA;NA;Bélgica
+Egipto;1;1;Irán
+Nueva Zelanda;1;5;Bélgica
 ;;;
 Equipo;Resultado;;Equipo
 España;0;0;Cabo Verde
 Arabia Saudita;1;1;Uruguay
 España;4;0;Arabia Saudita
 Uruguay;2;2;Cabo Verde
-Cabo Verde;NA;NA;Arabia Saudita
-Uruguay;NA;NA;España
+Cabo Verde;0;0;Arabia Saudita
+Uruguay;0;1;España
 ;;;
 Equipo;Resultado;;Equipo
 Francia;3;1;Senegal
 Irak;1;4;Noruega
 Francia;3;0;Irak
 Noruega;3;2;Senegal
-Noruega;NA;NA;Francia
-Senegal;NA;NA;Irak
+Noruega;1;4;Francia
+Senegal;5;0;Irak
 ;;;
 Equipo;Resultado;;Equipo
 Argentina;3;0;Argelia
 Austria;3;1;Jordania
 Argentina;2;0;Austria
 Jordania;1;2;Argelia
-Argelia;NA;NA;Austria
-Jordania;NA;NA;Argentina
+Argelia;3;3;Austria
+Jordania;1;3;Argentina
 ;;;
 Equipo;Resultado;;Equipo
 Portugal;1;1;República Democrática del Congo
 Uzbekistán;1;3;Colombia
 Portugal;5;0;Uzbekistán
-Colombia;NA;NA;República Democrática del Congo
-Colombia;NA;NA;Portugal
-República Democrática del Congo;NA;NA;Uzbekistán
+Colombia;1;0;República Democrática del Congo
+Colombia;0;0;Portugal
+República Democrática del Congo;3;1;Uzbekistán
 ;;;
 Equipo;Resultado;;Equipo
 Inglaterra;4;2;Croacia
 Ghana;1;0;Panamá
 Inglaterra;0;0;Ghana
-Panamá;NA;NA;Croacia
-Panamá;NA;NA;Inglaterra
-Croacia;NA;NA;Ghana
+Panamá;0;1;Croacia
+Panamá;0;2;Inglaterra
+Croacia;2;1;Ghana
 ;;;
 Equipo;Resultado;;Equipo
-2A;NA;NA;2B
-1C;NA;NA;2F
-1E;NA;NA;3ABCDF
-1F;NA;NA;2C
-2E;NA;NA;2I
-1I;NA;NA;3CDFGH
-1A;NA;NA;3CEFHI
-1L;NA;NA;3EHIJK
-1G;NA;NA;3AEHIJ
-1D;NA;NA;3BEFIJ
-1H;NA;NA;2J
-2K;NA;NA;2L
-1B;NA;NA;3EFGIJ
-2D;NA;NA;2G
-1J;NA;NA;2H
-1K;NA;NA;3DEIJL
+Sudáfrica;0;1;Canadá
+Brasil;1;1;Japón
+Alemania;1;1;Paraguay
+Países Bajos;2;1;Marruecos
+Costa de Marfil;3;0;Noruega
+Francia;1;2;Suecia
+México;2;0;Ecuador
+Inglaterra;2;1;República Democrática del Congo
+Bélgica;NA;NA;Senegal
+Estados Unidos;NA;NA;Bosnia y Herzegovina
+España;NA;NA;Austria
+Portugal;NA;NA;Croacia
+Suiza;NA;NA;Argelia
+Australia;NA;NA;Egipto
+Argentina;NA;NA;Cabo Verde
+Colombia;NA;NA;Ghana
 ;;;
 Equipo;Resultado;;Equipo
-Round of 32 1;NA;NA;Round of 32 3
-Round of 32 2;NA;NA;Round of 32 5
-Round of 32 4;NA;NA;Round of 32 6
-Round of 32 7;NA;NA;Round of 32 8
-Round of 32 11;NA;NA;Round of 32 12
-Round of 32 9;NA;NA;Round of 32 10
-Round of 32 14;NA;NA;Round of 32 16
-Round of 32 13;NA;NA;Round of 32 15
+Canadá;NA;NA;Marruecos
+Paraguay;NA;NA;Francia
+Brasil;NA;NA;Noruega
+México;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
 ;;;
 Equipo;Resultado;;Equipo
-Round of 16 1;NA;NA;Round of 16 2
-Round of 16 5;NA;NA;Round of 16 6
-Round of 16 3;NA;NA;Round of 16 4
-Round of 16 7;NA;NA;Quarter final 4
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
 ;;;
 Equipo;Resultado;;Equipo
-Quarter final 1;NA;NA;Quarter final 2
-Quarter final 3;NA;NA;Quarter final 4
+TBD;NA;NA;TBD
+TBD;NA;NA;TBD
 ;;;
 Equipo;Resultado;;Equipo
-Loser Semifinal 1;NA;NA;Loser Semifinal 2
+TBD;NA;NA;TBD
 ;;;
 Equipo;Resultado;;Equipo
-Semifinal 1;NA;NA;Semifinal 2
+TBD;NA;NA;TBD

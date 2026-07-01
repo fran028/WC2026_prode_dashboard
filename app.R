@@ -97,10 +97,14 @@ ui <- page_sidebar(
             h4("Edit Predictions and Actual Results", style = "color: #D9C5B2;"),
             p("Changes made here will update the dashboard and save to the respective CSV file.", style="color: #A0A0A0;"),
             fluidRow(
-                column(4, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
-                column(4, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #16549b; color: #F3F3F4; border: none; font-weight: bold;"))
+                column(3, selectInput("editor_dataset", "Select Dataset to Edit:", choices = c("Actual Results", "Predictions"))),
+                column(3, actionButton("save_editor", "Save Changes to File", class="btn btn-primary", style="margin-top: 32px; background-color: #16549b; color: #F3F3F4; border: none; font-weight: bold;")),
+                column(3, actionButton("sync_api", "Sync Missing Results", icon = icon("sync"), class="btn btn-info", style="margin-top: 32px; color: white; border: none; font-weight: bold;"))
             ),
-            DTOutput("editor_table")
+            navset_underline(
+                nav_panel("Matches", DTOutput("editor_table")),
+                nav_panel("Penalties", DTOutput("penalty_table"))
+            )
         )
     )
   )
@@ -118,18 +122,30 @@ server <- function(input, output, session) {
   })
   
   # Reactive Data Storage
+  # Load initial data and optionally update from API if matches are missing
+  initial_real_data <- parse_predictions("predictions/resultados_reales.csv")
+  initial_real_data <- update_results_from_api(initial_real_data, "predictions/resultados_reales.csv")
+  
   rv <- reactiveValues(
-    real_data = parse_predictions("predictions/resultados_reales.csv"),
-    ml_preds = parse_predictions("predictions/prediccion_ml.csv")
+    real_data = initial_real_data,
+    ml_preds = parse_predictions("predictions/prediccion_ml.csv"),
+    real_penalties = parse_penalties("predictions/penalties_reales.csv"),
+    ml_penalties = parse_penalties("predictions/penalties_ml.csv")
   )
   
   standings <- reactive({ calculate_standings(rv$real_data) })
+  ml_standings <- reactive({ calculate_standings(rv$ml_preds) })
+  
+  final_real_data <- reactive({ compute_knockout_teams(rv$real_data, standings(), rv$real_penalties) })
+  final_ml_preds <- reactive({ compute_knockout_teams(rv$ml_preds, ml_standings(), rv$ml_penalties) })
+  
   top_scorer <- reactive({ standings() %>% filter(GF == max(GF)) %>% pull(Team) })
   least_conceded <- reactive({ standings() %>% filter(GA == min(GA)) %>% pull(Team) })
   most_wins <- reactive({ standings() %>% filter(W == max(W)) %>% pull(Team) })
   
   observe({
-    teams <- sort(unique(c(rv$real_data$Team1, rv$real_data$Team2)))
+    d <- final_real_data()
+    teams <- sort(unique(c(d$Team1, d$Team2)))
     teams <- teams[teams %in% unname(english_to_spanish)]
     updateSelectInput(session, "radar_team", choices = teams)
   })
@@ -155,7 +171,7 @@ server <- function(input, output, session) {
   })
   
   output$middle_stats_ui <- renderUI({
-    d_real <- rv$real_data %>% filter(!is.na(Goals1) & !is.na(Goals2))
+    d_real <- final_real_data() %>% filter(!is.na(Goals1) & !is.na(Goals2))
     
     # 1. Average Goals per Match
     avg_goals <- if(nrow(d_real) > 0) round(mean(d_real$Goals1 + d_real$Goals2), 2) else 0
@@ -293,7 +309,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     
     # Calculate goals over time using the joined real_data
-    joined <- rv$real_data %>% 
+    joined <- final_real_data() %>% 
       left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     
     joined$TotalReal <- rowSums(joined[, c("Goals1_real", "Goals2_real")], na.rm = TRUE)
@@ -343,7 +359,7 @@ server <- function(input, output, session) {
   
   output$stat_accuracy <- renderText({
     preds <- current_preds()
-    acc <- calculate_accuracy(rv$real_data, preds)
+    acc <- calculate_accuracy(final_real_data(), preds)
     paste0(acc, "%")
   })
   
@@ -352,9 +368,9 @@ server <- function(input, output, session) {
     req(input$radar_team)
     team <- input$radar_team
     preds <- current_preds()
-    if(is.null(preds)) preds <- rv$real_data[0,]
+    if(is.null(preds)) preds <- final_real_data()[0,]
     
-    d <- get_radar_data(team, rv$real_data, preds)
+    d <- get_radar_data(team, final_real_data(), preds)
     d$real[is.na(d$real)] <- 0
     d$pred[is.na(d$pred)] <- 0
     
@@ -466,7 +482,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     if(is.null(preds)) return(div("Error loading predictions.", style="color:red;"))
     
-    joined <- rv$real_data %>% 
+    joined <- final_real_data() %>% 
       left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     
     match_divs <- lapply(unique(joined$MatchDay_Label_real), function(g) {
@@ -529,7 +545,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     
     if(is.null(preds)) {
-      joined <- rv$real_data %>% 
+      joined <- final_real_data() %>% 
         rename(
           Team1_Abrev_real = Team1_Abrev,
           Team2_Abrev_real = Team2_Abrev,
@@ -546,7 +562,7 @@ server <- function(input, output, session) {
           Group_real = Group
         )
     } else {
-      joined <- rv$real_data %>% 
+      joined <- final_real_data() %>% 
         left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
     }
     joined <- joined %>% filter(!is.na(city_id_real))
@@ -664,13 +680,47 @@ server <- function(input, output, session) {
   })
   
   # --- Data Editor Logic ---
-  editor_data <- reactive({
-    if (input$editor_dataset == "Actual Results") {
-      rv$real_data
+  
+  # Enable sync button only if there are pending past matches
+  observe({
+    d <- rv$real_data
+    current_utc <- as.POSIXct(Sys.time(), tz = "UTC")
+    
+    needs_sync <- d %>%
+      filter(is.na(Goals1) & !is.na(Kickoff_UTC) & Kickoff_UTC != "") %>%
+      mutate(
+        match_end_time = as.POSIXct(Kickoff_UTC, tz = "UTC") + 7200
+      ) %>%
+      filter(match_end_time < current_utc)
+    
+    if (nrow(needs_sync) > 0) {
+      shinyjs::enable("sync_api")
     } else {
-      rv$ml_preds
+      shinyjs::disable("sync_api")
     }
   })
+  
+  observeEvent(input$sync_api, {
+    showNotification("Syncing with OpenFootball API...", type = "message")
+    updated_data <- update_results_from_api(rv$real_data, "predictions/resultados_reales.csv")
+    
+    old_played <- sum(!is.na(rv$real_data$Goals1))
+    new_played <- sum(!is.na(updated_data$Goals1))
+    
+    if (new_played > old_played) {
+      rv$real_data <- updated_data
+      showNotification(sprintf("Successfully imported %d new match results!", new_played - old_played), type = "message", duration = 5)
+    } else {
+      showNotification("No new matches to sync.", type = "warning", duration = 3)
+    }
+  })
+    editor_data <- reactive({
+      if(input$editor_dataset == "Actual Results") {
+        final_real_data()
+      } else {
+        final_ml_preds()
+      }
+    })
   
   output$editor_table <- renderDT({
     # Re-render only when the selected dataset changes, not when cell values are edited in place
@@ -734,17 +784,80 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$save_editor, {
+    dataset <- if (input$editor_dataset == "Actual Results") final_real_data() else final_ml_preds()
+    pens <- if (input$editor_dataset == "Actual Results") rv$real_penalties else rv$ml_penalties
+    
+    tied_matches <- dataset %>% 
+      filter(stage_id > 1 & !is.na(Goals1) & !is.na(Goals2) & Goals1 == Goals2) %>%
+      select(MatchID, Team1, Team2)
+      
+    if (nrow(tied_matches) > 0) {
+      new_pens <- tied_matches %>%
+        filter(!(MatchID %in% pens$MatchID)) %>%
+        mutate(Pen1 = NA_real_, Pen2 = NA_real_)
+      
+      if (nrow(new_pens) > 0) {
+        pens <- bind_rows(pens, new_pens) %>% arrange(MatchID)
+      }
+    }
+    
     if (input$editor_dataset == "Actual Results") {
-      save_predictions(rv$real_data, "predictions/resultados_reales.csv")
-      showNotification("Actual Results saved to file!", type = "message")
+      save_predictions(final_real_data(), "predictions/resultados_reales.csv")
+      rv$real_penalties <- pens
+      save_penalties(pens, "predictions/penalties_reales.csv")
+      showNotification("Actual Results and Penalties saved to file!", type = "message")
     } else {
-      save_predictions(rv$ml_preds, "predictions/prediccion_ml.csv")
-      showNotification("ML Predictions saved to file!", type = "message")
+      save_predictions(final_ml_preds(), "predictions/prediccion_ml.csv")
+      rv$ml_penalties <- pens
+      save_penalties(pens, "predictions/penalties_ml.csv")
+      showNotification("ML Predictions and Penalties saved to file!", type = "message")
+    }
+  })
+  
+  output$penalty_table <- renderDT({
+    pens <- if (input$editor_dataset == "Actual Results") rv$real_penalties else rv$ml_penalties
+    fd <- if (input$editor_dataset == "Actual Results") final_real_data() else final_ml_preds()
+    
+    p_disp <- pens %>%
+      select(MatchID, Pen1, Pen2) %>%
+      left_join(fd %>% select(MatchID, Team1, Team2), by = "MatchID") %>%
+      select(MatchID, Team1, Pen1, Pen2, Team2)
+      
+    datatable(p_disp, 
+              editable = list(target = "cell", disable = list(columns = c(0, 1, 4))),
+              options = list(paging = FALSE, scrollX = TRUE, dom = 't'),
+              rownames = FALSE,
+              style = "bootstrap") %>%
+      formatStyle(columns = names(p_disp), color = '#F3F3F4', backgroundColor = '#202020')
+  })
+  
+  observeEvent(input$penalty_table_cell_edit, {
+    info <- input$penalty_table_cell_edit
+    i <- info$row
+    j <- info$col + 1
+    v <- as.numeric(info$value)
+    
+    if (input$editor_dataset == "Actual Results") {
+      d <- rv$real_penalties
+      if (j == 3) {
+        d$Pen1[i] <- v
+      } else if (j == 4) {
+        d$Pen2[i] <- v
+      }
+      rv$real_penalties <- d
+    } else {
+      d <- rv$ml_penalties
+      if (j == 3) {
+        d$Pen1[i] <- v
+      } else if (j == 4) {
+        d$Pen2[i] <- v
+      }
+      rv$ml_penalties <- d
     }
   })
   
   output$calendar_ui <- renderUI({
-    d_real <- rv$real_data
+    d_real <- final_real_data()
     preds <- current_preds()
     if(!is.null(preds)) {
       p_subset <- preds %>% select(Team1, Team2, Goals1_pred = Goals1, Goals2_pred = Goals2)

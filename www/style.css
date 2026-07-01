@@ -608,3 +608,17 @@
         background-color: #F3F3F4 !important;
         color: #7E7F83 !important;
       }
+      
+      /* Sync API Button styling */
+      #sync_api {
+        background-color: #749FD2 !important;
+        transition: background-color 0.3s ease, opacity 0.3s ease;
+      }
+      #sync_api.btn-info:disabled, 
+      #sync_api.btn-info.disabled, 
+      button#sync_api[disabled] {
+        background-color: #7E7F83 !important;
+        border-color: #7E7F83 !important;
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
