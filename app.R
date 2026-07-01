@@ -204,7 +204,7 @@ server <- function(input, output, session) {
     preds <- current_preds()
     avg_err <- "-"
     if(!is.null(preds) && nrow(d_real) > 0) {
-      j <- d_real %>% left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred")) %>%
+      j <- d_real %>% left_join(preds, by = "MatchID", suffix = c("_real", "_pred")) %>%
              filter(!is.na(Goals1_pred) & !is.na(Goals2_pred))
       if(nrow(j) > 0) {
         err <- mean(abs(j$Goals1_real - j$Goals1_pred) + abs(j$Goals2_real - j$Goals2_pred))
@@ -316,7 +316,7 @@ server <- function(input, output, session) {
     
     # Calculate goals over time using the joined real_data
     joined <- final_real_data() %>% 
-      left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
+      left_join(preds, by = "MatchID", suffix = c("_real", "_pred"))
     
     joined$TotalReal <- rowSums(joined[, c("Goals1_real", "Goals2_real")], na.rm = TRUE)
     joined$TotalPred <- rowSums(joined[, c("Goals1_pred", "Goals2_pred")], na.rm = TRUE)
@@ -489,7 +489,7 @@ server <- function(input, output, session) {
     if(is.null(preds)) return(div("Error loading predictions.", style="color:red;"))
     
     joined <- final_real_data() %>% 
-      left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
+      left_join(preds, by = "MatchID", suffix = c("_real", "_pred"))
     
     match_divs <- lapply(unique(joined$MatchDay_Label_real), function(g) {
       g_matches <- joined %>% filter(MatchDay_Label_real == g)
@@ -569,7 +569,7 @@ server <- function(input, output, session) {
         )
     } else {
       joined <- final_real_data() %>% 
-        left_join(preds, by = c("Team1", "Team2"), suffix = c("_real", "_pred"))
+        left_join(preds, by = "MatchID", suffix = c("_real", "_pred"))
     }
     joined <- joined %>% filter(!is.na(city_id_real))
     
@@ -870,8 +870,8 @@ server <- function(input, output, session) {
     d_real <- final_real_data()
     preds <- current_preds()
     if(!is.null(preds)) {
-      p_subset <- preds %>% select(Team1, Team2, Goals1_pred = Goals1, Goals2_pred = Goals2)
-      d <- d_real %>% left_join(p_subset, by = c("Team1", "Team2")) %>%
+      p_subset <- preds %>% select(MatchID, Team1, Team2, Goals1_pred = Goals1, Goals2_pred = Goals2)
+      d <- d_real %>% left_join(p_subset, by = "MatchID") %>%
            rename(Goals1_real = Goals1, Goals2_real = Goals2)
     } else {
       d <- d_real %>% mutate(Goals1_real = Goals1, Goals2_real = Goals2, Goals1_pred = NA, Goals2_pred = NA)

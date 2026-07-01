@@ -240,7 +240,7 @@ calculate_accuracy <- function(real, pred) {
   if(is.null(pred) || nrow(pred) == 0) return(0)
   # Only check accuracy for played matches
   joined <- real %>% 
-    inner_join(pred, by = c("Team1", "Team2"), suffix = c("_real", "_pred")) %>%
+    inner_join(pred, by = "MatchID", suffix = c("_real", "_pred")) %>%
     filter(!is.na(Goals1_real) & !is.na(Goals2_real))
   if(nrow(joined) == 0) return(0)
   
